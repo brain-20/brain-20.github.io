@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An LLM wrote a model worth 3,500 labelled rows</title>
+<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN up to 256 rows. It could not improve them from a few labelled rows.">
+<style>
+  :root {
+    --bg: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781; --rule: #e1e0d9;
+    --card: #f4f3ef; --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781; --rule: #2c2c2a;
+            --card: #1f1f1d; --accent: #5598e7; }
+    figure img { border-radius: 6px; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  h1 { font-size: 34px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 12px; }
+  .byline { color: var(--ink2); font-size: 15px; margin-bottom: 28px; }
+  h2 { font-size: 22px; line-height: 1.3; margin: 44px 0 10px; }
+  p, ul { margin: 0 0 16px; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .tldr { background: var(--card); border-radius: 10px; padding: 18px 20px; margin: 8px 0 28px; }
+  .tldr strong:first-child { display: block; margin-bottom: 4px; }
+  .teasers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 12px; }
+  .teaser { border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
+  .teaser .q { font-size: 14px; color: var(--ink2); margin-bottom: 6px; line-height: 1.4; }
+  .teaser .a { font-size: 16px; font-weight: 600; line-height: 1.35; }
+  .teaser .a span { display: block; font-weight: 400; font-size: 14px; color: var(--ink2); margin-top: 4px; }
+  figure { margin: 24px -20px; }
+  figure img { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 14px; color: var(--ink2); padding: 8px 20px 0; line-height: 1.5; }
+  .setup { border-left: 3px solid var(--rule); padding: 2px 0 2px 16px; margin: 0 0 16px; }
+  .setup ul { margin: 0; }
+  .result { font-weight: 600; }
+  .small { font-size: 15px; color: var(--ink2); }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 44px 0 24px; }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    main { padding-top: 32px; }
+    h1 { font-size: 27px; }
+    .teasers { grid-template-columns: 1fr; }
+    figure { margin: 20px -12px; }
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>An LLM wrote a model worth 3,500 labelled rows</h1>
+<div class="byline">Salmaan Barday · November 2026</div>
+
+<div class="tldr">
+  <strong>TL;DR</strong>
+  We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone, with
+  no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic regression
+  trained on 3,500 labelled rows, and they beat TabPFN, XGBoost and logistic regression at every budget up to 256 rows.
+  But the knowledge is linear. Forced to write a 16-unit neural network, the hidden layer added nothing. And when Claude
+  edited its own weights after seeing 16 or 64 labelled rows, it learned nothing it hadn't already written down.
+</div>
+
+<div class="teasers">
+  <div class="teaser"><div class="q">Can it write a useful model with no data?</div>
+    <div class="a">Yes.<span>0.805 AUC, the same as logistic regression on 3,500 rows.</span></div></div>
+  <div class="teaser"><div class="q">Does that beat a tabular foundation model?</div>
+    <div class="a">Yes.<span>Ahead of TabPFN up to 256 rows, and on 17 of 17 tasks at 4 to 16 rows.</span></div></div>
+  <div class="teaser"><div class="q">Can it learn by editing its own weights?</div>
+    <div class="a">Not here.<span>Its first draft was already as good as 3,500 rows. Editing it with 16 or 64 labelled rows changed nothing.</span></div></div>
+</div>
+
+<h2>Why the data has to be newer than the model</h2>
+<p>Results on LLMs and tables are hard to trust because the benchmarks are on the internet. In our pilot on the
+<a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite, Claude could reproduce rows from 4 of the 16
+datasets. So we built six tasks from surveys published after its training cutoff (June 2026). These are the
+CDC's <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a> (files released August 2026)
+and <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026). The tasks are hypertension,
+diabetes, depression, arthritis, anxiety and loneliness, a question NHIS first asked in 2025.</p>
+<p>The rows are new. The epidemiology is not, and that is the point. We want to know what the model's knowledge is
+worth on data it cannot have seen. Every test was written down and hashed before any reply came back.</p>
+
+<h2>The setup</h2>
+<div class="setup"><ul>
+  <li><b>Claude sees</b> the dataset description, what the target means, and each column's name, type and summary
+    statistics.</li>
+  <li><b>Not allowed</b> any row or any label.</li>
+  <li><b>It writes</b> a small network, logit = c + a·x + Σ out·relu(b + w·x), with a linear part and 16 hidden units,
+    as JSON in raw units. Five samples per task, averaged.</li>
+  <li><b>Then</b> the usual few-shot protocol. Draw k labelled rows (4 to 256, five draws each), fit, and score AUC on
+    1,500 held-out rows.</li>
+</ul></div>
+
+<figure>
+  <img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows. Claude's written network stays near 0.80 from 0 to 256 rows. TabPFN rises from 0.60 to 0.78, XGBoost from 0.50 to 0.73, logistic regression from 0.58 to 0.71. A dashed line at 0.80 marks logistic regression trained on all 3,500 rows.">
+  <figcaption>Mean AUC over the six 2025 tasks. With no rows, the written network already sits at the level of
+  logistic regression trained on every row. TabPFN is still below it at 256.</figcaption>
+</figure>
+
+<p class="result">With zero rows, the written network scores 0.805. Logistic regression needs all 3,500 rows to reach
+0.800, and TabPFN reaches 0.78 at 256.</p>
+<p>Training the network on the rows, with a pull toward Claude's weights, keeps it there. Pooled with our pilot
+(11 more datasets), Claude's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once the memorised
+datasets are removed.</p>
+
+<h2>What carries it</h2>
+<figure>
+  <img src="fig2_what_carries_the_gain.png" alt="Dot plot of AUC differences with 95% intervals. Large positive gains for the written network over TabPFN, random initialisation, shuffled columns and masked names. Near-zero differences for the hidden layer, Claude's edits, edits with or without rows, and direct prediction.">
+  <figcaption>Differences in AUC over the six tasks, with 95% bootstrap intervals and wins out of 6.</figcaption>
+</figure>
+<p>It is knowledge, not structure. Move the same weights onto shuffled columns and the AUC falls to 0.565. Hide the
+column names and most of the gain disappears on the mental-health tasks. Start the same network from random weights
+and it loses 0.18.</p>
+<p>The hidden layer, though, does nothing. Each unit was meant to capture a threshold or an interaction, and replacing
+it with its own straight-line approximation costs 0.003. Asking Claude to predict each row directly gives the same
+accuracy as the written model. Writing the model costs one call per task instead of one per row, and you can read it.</p>
+
+<h2>Can Claude learn by editing its own weights?</h2>
+<p>Inspired by <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>, we
+gave Claude a feedback loop.</p>
+<div class="setup"><ul>
+  <li><b>Claude sees</b> its network's prediction on each of k = 16 or 64 training rows, the true labels, the loss,
+    and what each hidden unit does.</li>
+  <li><b>Not allowed</b> any test row or test score.</li>
+  <li><b>It returns</b> a revised network, for two rounds.</li>
+  <li><b>Compared with</b> gradient descent from the same network on the same rows, a tuned gradient descent, and a
+    control where Claude revises its network with no rows at all.</li>
+</ul></div>
+<p class="result">After the first draft, nothing improved it. Neither round of edits beat the network Claude started
+with (+0.0004), and edits that saw the rows did no better than edits without them (+0.0001).</p>
+<p>The edits did beat plain gradient descent on 6 of 6 tasks, by 0.005, but only because gradient descent slightly
+damaged a network that was already good while Claude's edits left it where it was. There is no sign it learned from
+the rows. The honest caveat is that there was no headroom. The starting point already
+matched 3,500 rows, so a few dozen could not add much. A fair test needs tasks where the prior is weaker.</p>
+
+<h2>What this does and doesn't show</h2>
+<ul>
+  <li>It shows that an LLM's knowledge, written down as a model, transfers to genuinely new data, and on these tasks it
+    is worth thousands of labels. The result holds whether the knowledge is written as priors, as a network, or as
+    direct predictions.</li>
+  <li>It is one model (Claude Opus 5.5) in one well-studied domain (US health surveys), with six new tasks. The rows
+    are new, but the relationships are well documented.</li>
+  <li>The network structure and the edit loop add nothing here. Whether they help where the prior is weaker is open.</li>
+</ul>
+
+<hr>
+<p class="small"><b>Details.</b> Everything was pre-registered, with a log of every change. The whole study used
+about $20 of API calls. Claude helped design, run and write up this study, and it was also the model under test,
+which is one more reason to repeat it with another model family. A paper with code and data is on the way.
+Related work includes <a href="https://arxiv.org/abs/2411.17284">AutoElicit</a>,
+<a href="https://arxiv.org/abs/2609.39639">MARS</a>, <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> and
+<a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>.</p>
+</main>
+</body>
+</html>
