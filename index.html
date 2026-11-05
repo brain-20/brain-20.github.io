@@ -4,20 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Salmaan Barday</title>
+<link rel="stylesheet" href="assets/fonts.css">
 <style>
-  :root { --bg: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --rule: #e1e0d9; --accent: #2a78d6; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #161615; --ink: #f0efec; --ink2: #c3c2b7; --rule: #2c2c2a; --accent: #5598e7; } }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif; }
-  main { max-width: 720px; margin: 0 auto; padding: 56px 20px; }
-  h1 { font-size: 28px; margin: 0 0 6px; }
-  .sub { color: var(--ink2); margin: 0 0 36px; }
-  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink2); font-weight: 600;
-       border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .post { margin: 18px 0; }
-  .post a { font-size: 19px; font-weight: 600; }
-  .post div { color: var(--ink2); font-size: 15px; }
+  :root { --bg: #ffffff; --ink: #151a22; --ink2: #4d5564; --rule: #e2e6ec; --accent: #2a78d6; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.65 "Source Serif 4", Georgia, serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 72px 28px; }
+  h1, h2, .post a, .post .when { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+  h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .sub { color: var(--ink2); margin: 0 0 48px; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--ink2); border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin: 0; max-width: 720px; }
+  .post { padding: 18px 0; border-bottom: 1px solid var(--rule); max-width: 720px; }
+  .post a { color: var(--ink); font-size: 21px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em; }
+  .post a:hover, .post a:focus-visible { color: var(--accent); }
+  .post .when { font-size: 14px; color: var(--ink2); margin-top: 2px; }
+  .post p { margin: 6px 0 0; color: var(--ink2); }
+  @media (max-width: 860px) { main { padding: 44px 18px; } h1 { font-size: 30px; } }
 </style>
 </head>
 <body>
@@ -27,7 +28,8 @@
   <h2>Posts</h2>
   <div class="post">
     <a href="blog/llm-written-models/">An LLM wrote a model worth 3,500 labelled rows</a>
-    <div>November 2026 · On data newer than its training, Claude's written models beat TabPFN up to 256 rows, but couldn't learn from a few more.</div>
+    <div class="when">November 2026</div>
+    <p>On data newer than its training, Opus 5.5's written models beat TabPFN up to 256 rows, and a few labelled rows did not improve them.</p>
   </div>
 </main>
 </body>

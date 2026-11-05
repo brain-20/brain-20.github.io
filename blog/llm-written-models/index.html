@@ -4,155 +4,293 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>An LLM wrote a model worth 3,500 labelled rows</title>
-<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN up to 256 rows. It could not improve them from a few labelled rows.">
+<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN up to 256 rows. A few labelled rows did not improve them.">
+<link rel="stylesheet" href="../../assets/fonts.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
 <style>
   :root {
-    --bg: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781; --rule: #e1e0d9;
-    --card: #f4f3ef; --accent: #2a78d6;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #161615; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781; --rule: #2c2c2a;
-            --card: #1f1f1d; --accent: #5598e7; }
-    figure img { border-radius: 6px; }
+    --bg: #ffffff; --ink: #151a22; --ink2: #4d5564; --muted: #7b8392; --rule: #e2e6ec; --tint: #f2f5f9;
+    --accent: #2a78d6;
+    --serif: "Source Serif 4", Georgia, serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif; }
-  main { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
-  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-  h1 { font-size: 34px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 12px; }
-  .byline { color: var(--ink2); font-size: 15px; margin-bottom: 28px; }
-  h2 { font-size: 22px; line-height: 1.3; margin: 44px 0 10px; }
-  p, ul { margin: 0 0 16px; }
-  ul { padding-left: 22px; }
-  li { margin-bottom: 6px; }
-  .tldr { background: var(--card); border-radius: 10px; padding: 18px 20px; margin: 8px 0 28px; }
-  .tldr strong:first-child { display: block; margin-bottom: 4px; }
-  .teasers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0 0 12px; }
-  .teaser { border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; }
-  .teaser .q { font-size: 14px; color: var(--ink2); margin-bottom: 6px; line-height: 1.4; }
-  .teaser .a { font-size: 16px; font-weight: 600; line-height: 1.35; }
-  .teaser .a span { display: block; font-weight: 400; font-size: 14px; color: var(--ink2); margin-top: 4px; }
-  figure { margin: 24px -20px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.7 var(--serif); }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+  .row { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; align-items: start; }
+  .row > .side { padding-top: 6px; }
+  p { margin: 0 0 18px; }
+  h1, h2, h3 { font-family: var(--sans); }
+
+  header { padding: 72px 0 40px; }
+  h1 { font-size: 52px; line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; max-width: 15ch; }
+  .byline { font-family: var(--sans); font-size: 15px; color: var(--ink2); margin: 0 0 40px; }
+  .tldr { font-size: 19px; line-height: 1.65; }
+  .tldr b { font-family: var(--sans); font-weight: 600; font-size: 15px; display: block; margin-bottom: 6px; color: var(--ink2); }
+  .qa { font-family: var(--sans); margin: 0; border-top: 2px solid var(--ink); }
+  .qa div { padding: 14px 0 15px; border-bottom: 1px solid var(--rule); }
+  .qa dt { font-size: 14px; color: var(--ink2); margin-bottom: 3px; }
+  .qa dd { margin: 0; font-size: 16px; line-height: 1.45; }
+  .qa dd strong { font-weight: 600; }
+
+  section { padding: 40px 0 8px; border-top: 1px solid var(--rule); }
+  h2 { font-size: 27px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 18px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 0 0 10px; color: var(--ink2); }
+  .lede { font-family: var(--sans); font-size: 19px; line-height: 1.5; font-weight: 500; margin-bottom: 18px; }
+
+  .panel { background: var(--tint); border-radius: 6px; padding: 20px 22px 6px; font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+  .panel dl { margin: 0; }
+  .panel dt { font-weight: 600; }
+  .panel dd { margin: 0 0 14px; color: var(--ink2); }
+  table.tasks { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 15px; }
+  table.tasks th { text-align: left; font-weight: 500; color: var(--ink2); font-size: 13px; padding: 0 0 8px; border-bottom: 2px solid var(--ink); }
+  table.tasks td { padding: 8px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  table.tasks td.n, table.tasks th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.tasks td.n { color: var(--ink2); }
+  .note { font-family: var(--sans); font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+  .formula { font-size: 19px; margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+  .written { margin: 28px 0 8px; }
+  .written h3 { margin-bottom: 4px; }
+  .unit { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; padding: 16px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .written h3 + .unit { border-top: 2px solid var(--ink); }
+  .unit .m { font-size: 18px; overflow-x: auto; overflow-y: hidden; }
+  .unit .why { font-style: italic; color: var(--ink2); font-size: 17px; line-height: 1.5; }
+  .unit .nm { display: block; font-family: var(--sans); font-style: normal; font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .nums { font-family: var(--sans); border-top: 2px solid var(--ink); margin: 0; }
+  .nums div { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .nums dt { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .nums dd { margin: 0; font-size: 15px; color: var(--ink2); line-height: 1.45; }
+
+  figure { margin: 30px 0 34px; }
+  figure a { display: block; }
   figure img { width: 100%; height: auto; display: block; }
-  figcaption { font-size: 14px; color: var(--ink2); padding: 8px 20px 0; line-height: 1.5; }
-  .setup { border-left: 3px solid var(--rule); padding: 2px 0 2px 16px; margin: 0 0 16px; }
-  .setup ul { margin: 0; }
-  .result { font-weight: 600; }
-  .small { font-size: 15px; color: var(--ink2); }
-  hr { border: 0; border-top: 1px solid var(--rule); margin: 44px 0 24px; }
-  @media (max-width: 640px) {
-    body { font-size: 16px; }
-    main { padding-top: 32px; }
-    h1 { font-size: 27px; }
-    .teasers { grid-template-columns: 1fr; }
-    figure { margin: 20px -12px; }
+  figcaption { font-family: var(--sans); font-size: 14px; color: var(--ink2); max-width: 70ch; margin-top: 8px; line-height: 1.5; }
+
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+  .cols2 h3 { color: var(--ink); font-size: 17px; border-top: 2px solid var(--ink); padding-top: 12px; }
+  .cols2 ul { margin: 0; padding-left: 20px; }
+  .cols2 li { margin-bottom: 10px; }
+  footer { border-top: 1px solid var(--rule); margin-top: 32px; padding: 26px 0 72px; font-family: var(--sans); font-size: 14px; color: var(--ink2); }
+  footer p { max-width: 80ch; }
+
+  @media (max-width: 1000px) {
+    .row, .cols2 { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  }
+  @media (max-width: 860px) {
+    .wrap { padding: 0 18px; }
+    header { padding: 44px 0 24px; }
+    h1 { font-size: 36px; }
+    body { font-size: 17px; }
+    .unit { grid-template-columns: 1fr; gap: 6px; }
+    .formula { font-size: 13.5px; }
+  }
+  @media (max-width: 420px) {
+    .formula { font-size: 12.5px; }
+  }
+  @media (max-width: 370px) {
+    .formula { font-size: 11.8px; }
+    .unit .m { font-size: 16px; }
   }
 </style>
 </head>
 <body>
-<main>
-<h1>An LLM wrote a model worth 3,500 labelled rows</h1>
-<div class="byline">Salmaan Barday · November 2026</div>
+<div class="wrap">
 
-<div class="tldr">
-  <strong>TL;DR</strong>
-  We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone, with
-  no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic regression
-  trained on 3,500 labelled rows, and they beat TabPFN, XGBoost and logistic regression at every budget up to 256 rows.
-  But the knowledge is linear. Forced to write a 16-unit neural network, the hidden layer added nothing. And when Claude
-  edited its own weights after seeing 16 or 64 labelled rows, it learned nothing it hadn't already written down.
+<header>
+  <h1>An LLM wrote a model worth 3,500 labelled rows</h1>
+  <p class="byline">Salmaan Barday, November 2026</p>
+  <div class="row">
+    <div class="tldr">
+      <b>TL;DR</b>
+      We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone,
+      with no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic
+      regression trained on 3,500 labelled rows, and they beat TabPFN, XGBoost and logistic regression at every budget
+      up to 256 rows. The knowledge is linear, though, and once written down, a few labelled rows did not improve it.
+    </div>
+    <dl class="qa">
+      <div><dt>Can it write a useful model with no data?</dt>
+        <dd><strong>Yes.</strong> 0.805 AUC, the same as logistic regression on 3,500 rows.</dd></div>
+      <div><dt>Does that beat a tabular foundation model?</dt>
+        <dd><strong>Yes.</strong> Ahead of TabPFN up to 256 rows, and on 17 of 17 tasks at 4 to 16 rows.</dd></div>
+      <div><dt>Can it learn by editing its own weights?</dt>
+        <dd><strong>Not here.</strong> Its first draft was already as good as 3,500 rows. Editing it with 16 or 64
+          labelled rows changed nothing.</dd></div>
+    </dl>
+  </div>
+</header>
+
+<section>
+  <div class="row">
+    <div>
+      <h2>Why the data has to be newer than the model</h2>
+      <p>Results on LLMs and tables are hard to trust because the benchmarks are on the internet. In our pilot on the
+      <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite, Opus 5.5 could reproduce rows from 4 of the 16
+      datasets. So we built six tasks from surveys published after its training cutoff in June 2026, the CDC's
+      <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a> (released August 2026) and
+      <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026).</p>
+      <p>The rows are new. The epidemiology is not, and that is the point. We want to know what the model's knowledge
+      is worth on data it cannot have seen. Every test was written down and hashed before any reply came back.</p>
+    </div>
+    <div class="side">
+      <table class="tasks">
+        <thead><tr><th>Task, y = 1 if ever told</th><th>Survey</th><th class="n">Share</th></tr></thead>
+        <tbody>
+          <tr><td>High blood pressure</td><td>BRFSS</td><td class="n">42%</td></tr>
+          <tr><td>Diabetes</td><td>BRFSS</td><td class="n">16%</td></tr>
+          <tr><td>Depression</td><td>BRFSS</td><td class="n">22%</td></tr>
+          <tr><td>Arthritis</td><td>BRFSS</td><td class="n">34%</td></tr>
+          <tr><td>Anxiety disorder</td><td>NHIS</td><td class="n">19%</td></tr>
+          <tr><td>Feels lonely at least sometimes</td><td>NHIS</td><td class="n">27%</td></tr>
+        </tbody>
+      </table>
+      <p class="note">5,000 respondents per task, about 25 features each (age, sex, income, smoking, other
+      conditions). Loneliness is a question NHIS first asked in 2025.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="row">
+    <div>
+      <h2>What Opus 5.5 writes</h2>
+      <p>From the schema alone, it writes a small network in raw units, with a linear part and 16 hidden units, as
+      JSON.</p>
+      <div class="formula"><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mop"><span class="mord mathrm">logit</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:2.4638em;vertical-align:-1.4138em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:3.1032em;vertical-align:-1.3021em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8011em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">16</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mord"><span class="delimsizing size1">(</span></span><span class="mord"><span class="mord mathnormal">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.2858em;vertical-align:-0.4358em;"></span><span class="mop"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.162em;"><span style="top:-2.4003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4358em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">kj</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
+      <p>We average five such networks per task, then follow the usual few-shot protocol. We draw k labelled rows (4 to
+      256, five draws each), fit, and score AUC on 1,500 held-out rows.</p>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <dl>
+          <dt>Opus 5.5 sees</dt><dd>The dataset description, what the target means, and each column's name, type and
+            summary statistics.</dd>
+          <dt>Not allowed</dt><dd>Any row or any label.</dd>
+          <dt>It returns</dt><dd>The linear weights a, and for each hidden unit its weights w, bias b, output weight v
+            and a one-line reason.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="written">
+    <h3>Three of the hidden units it wrote for high blood pressure</h3>
+    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">65</span><span class="mclose">)</span></span></span></span></div>
+      <div class="why">“Age-related rise in log-odds slows at older ages.”<span class="nm">age_over_65_flatten</span></div></div>
+    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.4</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">male</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">3</span><span class="mclose">)</span></span></span></span></div>
+      <div class="why">“Women's hypertension catches up to men's after menopause.”<span class="nm">female_older_catchup</span></div></div>
+    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.6</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.5</span><span class="mclose">)</span></span></span></span></div>
+      <div class="why">“Diabetes relative effect stronger in younger adults.”<span class="nm">diabetes_young</span></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>It starts where the data ends</h2>
+  <figure>
+    <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows. Opus 5.5's written network stays near 0.80 from 0 to 256 rows. TabPFN rises from 0.60 to 0.78, XGBoost from 0.50 to 0.73, logistic regression from 0.58 to 0.71. A dashed line at 0.80 marks logistic regression trained on all 3,500 rows."></a>
+    <figcaption>Mean AUC over the six 2025 tasks. With no rows, the written network already sits at the level of
+    logistic regression trained on every row. TabPFN is still below it at 256.</figcaption>
+  </figure>
+  <div class="row">
+    <div>
+      <p class="lede">With zero rows the written network scores 0.805. Logistic regression needs all 3,500 rows to
+      reach 0.800.</p>
+      <p>Training the network on the rows, with a pull toward the written weights, keeps it there. Pooled with our
+      pilot (11 more datasets), Opus 5.5's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once
+      the memorised datasets are removed.</p>
+    </div>
+    <dl class="nums">
+      <div><dt>0.805</dt><dd>Opus 5.5's network, no labelled rows</dd></div>
+      <div><dt>0.800</dt><dd>Logistic regression on all 3,500 rows</dd></div>
+      <div><dt>0.782</dt><dd>TabPFN on 256 rows</dd></div>
+      <div><dt>17/17</dt><dd>Tasks where Opus 5.5's priors beat TabPFN at 4 to 16 rows</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <h2>What carries it</h2>
+  <figure>
+    <a href="fig2_what_carries_the_gain.png"><img src="fig2_what_carries_the_gain.png" alt="Dot plot of mean AUC. With no labelled rows, the written network, its straight-line version, the linear priors and direct scoring all sit near 0.80, while hiding column names gives 0.615 and shuffling columns 0.565. With 16 or 64 rows, the first draft, the edited network and the network revised without rows all sit near 0.80, gradient descent at 0.798 and TabPFN at 0.718."></a>
+    <figcaption>Mean AUC over the six tasks. Everything that keeps the knowledge lands near 0.80, and nothing added on top
+    moves it. Remove the knowledge and the score drops toward chance.</figcaption>
+  </figure>
+  <div class="row">
+    <div>
+      <p>It is knowledge, not structure. Move the same weights onto shuffled columns and the AUC falls to 0.565. Hide
+      the column names and most of the gain disappears on the mental-health tasks. Start the same network from random
+      weights and it loses 0.18.</p>
+    </div>
+    <div>
+      <p>The hidden layer, though, adds almost nothing. Units like the ones above read like an epidemiologist's notes,
+      yet replacing each with its own straight-line approximation costs only 0.003. Asking Opus 5.5 to predict each row
+      directly gives the same accuracy, but writing the model takes one call per task instead of one per row, and you
+      can read it.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="row">
+    <div>
+      <h2>Can it learn by editing its own weights?</h2>
+      <p>Inspired by <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>,
+      we gave Opus 5.5 a feedback loop and two rounds to revise its network.</p>
+      <p class="lede">After the first draft, nothing improved it.</p>
+      <p>Neither round of edits beat the network it started with (+0.0004), and edits that saw the rows did no better
+      than edits without them (+0.0001). The edits did beat plain gradient descent on 6 of 6 tasks, by 0.005, but only
+      because gradient descent slightly damaged a network that was already good while the edits left it where it
+      was.</p>
+      <p>The honest caveat is that there was no headroom. The first draft already matched 3,500 rows, so a few dozen
+      could not add much. A fair test needs tasks where the prior is weaker.</p>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <dl>
+          <dt>Opus 5.5 sees</dt><dd>Its network's prediction on each of k = 16 or 64 training rows, the true labels, the
+            loss, and what each hidden unit does.</dd>
+          <dt>Not allowed</dt><dd>Any test row or test score.</dd>
+          <dt>It returns</dt><dd>A revised network, in two rounds.</dd>
+          <dt>Compared with</dt><dd>Gradient descent from the same network on the same rows, a tuned gradient descent,
+            and the same revision with no rows at all.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="cols2">
+    <div>
+      <h3>What this shows</h3>
+      <ul>
+        <li>An LLM's knowledge, written down as a model, transfers to genuinely new data, and on these tasks it is
+          worth thousands of labels.</li>
+        <li>The result holds whether the knowledge is written as priors, as a network, or as direct predictions.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What it doesn't</h3>
+      <ul>
+        <li>It is one model (Claude Opus 5.5) in one well-studied domain (US health surveys), with six new tasks. The
+          rows are new, but the relationships are well documented.</li>
+        <li>The hidden layer and the edit loop add nothing here. Whether they help where the prior is weaker is
+          open.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Everything was pre-registered, with a log of every change. The whole study used about $20 of API calls. A paper
+  with code and data is on the way. Related work includes <a href="https://arxiv.org/abs/2411.17284">AutoElicit</a>,
+  <a href="https://arxiv.org/abs/2609.39639">MARS</a>, <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> and
+  <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>.</p>
+</footer>
+
 </div>
-
-<div class="teasers">
-  <div class="teaser"><div class="q">Can it write a useful model with no data?</div>
-    <div class="a">Yes.<span>0.805 AUC, the same as logistic regression on 3,500 rows.</span></div></div>
-  <div class="teaser"><div class="q">Does that beat a tabular foundation model?</div>
-    <div class="a">Yes.<span>Ahead of TabPFN up to 256 rows, and on 17 of 17 tasks at 4 to 16 rows.</span></div></div>
-  <div class="teaser"><div class="q">Can it learn by editing its own weights?</div>
-    <div class="a">Not here.<span>Its first draft was already as good as 3,500 rows. Editing it with 16 or 64 labelled rows changed nothing.</span></div></div>
-</div>
-
-<h2>Why the data has to be newer than the model</h2>
-<p>Results on LLMs and tables are hard to trust because the benchmarks are on the internet. In our pilot on the
-<a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite, Claude could reproduce rows from 4 of the 16
-datasets. So we built six tasks from surveys published after its training cutoff (June 2026). These are the
-CDC's <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a> (files released August 2026)
-and <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026). The tasks are hypertension,
-diabetes, depression, arthritis, anxiety and loneliness, a question NHIS first asked in 2025.</p>
-<p>The rows are new. The epidemiology is not, and that is the point. We want to know what the model's knowledge is
-worth on data it cannot have seen. Every test was written down and hashed before any reply came back.</p>
-
-<h2>The setup</h2>
-<div class="setup"><ul>
-  <li><b>Claude sees</b> the dataset description, what the target means, and each column's name, type and summary
-    statistics.</li>
-  <li><b>Not allowed</b> any row or any label.</li>
-  <li><b>It writes</b> a small network, logit = c + a·x + Σ out·relu(b + w·x), with a linear part and 16 hidden units,
-    as JSON in raw units. Five samples per task, averaged.</li>
-  <li><b>Then</b> the usual few-shot protocol. Draw k labelled rows (4 to 256, five draws each), fit, and score AUC on
-    1,500 held-out rows.</li>
-</ul></div>
-
-<figure>
-  <img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows. Claude's written network stays near 0.80 from 0 to 256 rows. TabPFN rises from 0.60 to 0.78, XGBoost from 0.50 to 0.73, logistic regression from 0.58 to 0.71. A dashed line at 0.80 marks logistic regression trained on all 3,500 rows.">
-  <figcaption>Mean AUC over the six 2025 tasks. With no rows, the written network already sits at the level of
-  logistic regression trained on every row. TabPFN is still below it at 256.</figcaption>
-</figure>
-
-<p class="result">With zero rows, the written network scores 0.805. Logistic regression needs all 3,500 rows to reach
-0.800, and TabPFN reaches 0.78 at 256.</p>
-<p>Training the network on the rows, with a pull toward Claude's weights, keeps it there. Pooled with our pilot
-(11 more datasets), Claude's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once the memorised
-datasets are removed.</p>
-
-<h2>What carries it</h2>
-<figure>
-  <img src="fig2_what_carries_the_gain.png" alt="Dot plot of AUC differences with 95% intervals. Large positive gains for the written network over TabPFN, random initialisation, shuffled columns and masked names. Near-zero differences for the hidden layer, Claude's edits, edits with or without rows, and direct prediction.">
-  <figcaption>Differences in AUC over the six tasks, with 95% bootstrap intervals and wins out of 6.</figcaption>
-</figure>
-<p>It is knowledge, not structure. Move the same weights onto shuffled columns and the AUC falls to 0.565. Hide the
-column names and most of the gain disappears on the mental-health tasks. Start the same network from random weights
-and it loses 0.18.</p>
-<p>The hidden layer, though, does nothing. Each unit was meant to capture a threshold or an interaction, and replacing
-it with its own straight-line approximation costs 0.003. Asking Claude to predict each row directly gives the same
-accuracy as the written model. Writing the model costs one call per task instead of one per row, and you can read it.</p>
-
-<h2>Can Claude learn by editing its own weights?</h2>
-<p>Inspired by <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>, we
-gave Claude a feedback loop.</p>
-<div class="setup"><ul>
-  <li><b>Claude sees</b> its network's prediction on each of k = 16 or 64 training rows, the true labels, the loss,
-    and what each hidden unit does.</li>
-  <li><b>Not allowed</b> any test row or test score.</li>
-  <li><b>It returns</b> a revised network, for two rounds.</li>
-  <li><b>Compared with</b> gradient descent from the same network on the same rows, a tuned gradient descent, and a
-    control where Claude revises its network with no rows at all.</li>
-</ul></div>
-<p class="result">After the first draft, nothing improved it. Neither round of edits beat the network Claude started
-with (+0.0004), and edits that saw the rows did no better than edits without them (+0.0001).</p>
-<p>The edits did beat plain gradient descent on 6 of 6 tasks, by 0.005, but only because gradient descent slightly
-damaged a network that was already good while Claude's edits left it where it was. There is no sign it learned from
-the rows. The honest caveat is that there was no headroom. The starting point already
-matched 3,500 rows, so a few dozen could not add much. A fair test needs tasks where the prior is weaker.</p>
-
-<h2>What this does and doesn't show</h2>
-<ul>
-  <li>It shows that an LLM's knowledge, written down as a model, transfers to genuinely new data, and on these tasks it
-    is worth thousands of labels. The result holds whether the knowledge is written as priors, as a network, or as
-    direct predictions.</li>
-  <li>It is one model (Claude Opus 5.5) in one well-studied domain (US health surveys), with six new tasks. The rows
-    are new, but the relationships are well documented.</li>
-  <li>The network structure and the edit loop add nothing here. Whether they help where the prior is weaker is open.</li>
-</ul>
-
-<hr>
-<p class="small"><b>Details.</b> Everything was pre-registered, with a log of every change. The whole study used
-about $20 of API calls. A paper with code and data is on the way.
-Related work includes <a href="https://arxiv.org/abs/2411.17284">AutoElicit</a>,
-<a href="https://arxiv.org/abs/2609.39639">MARS</a>, <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> and
-<a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>.</p>
-</main>
 </body>
 </html>
