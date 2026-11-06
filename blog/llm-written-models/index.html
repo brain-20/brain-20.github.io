@@ -30,6 +30,7 @@
   .byline { font-family: var(--sans); font-size: 15px; color: var(--ink2); margin: 0 0 40px; }
   .tldr { font-size: 19px; line-height: 1.65; }
   .tldr b { font-family: var(--sans); font-weight: 600; font-size: 15px; display: block; margin-bottom: 6px; color: var(--ink2); }
+  .intro { max-width: 760px; }
   .lead-fig { padding-top: 0; border-top: 0; }
   header:has(+ .lead-fig) { padding-bottom: 8px; }
   .lead-fig figure { margin-top: 0; }
@@ -154,7 +155,7 @@
 <header>
   <h1>An LLM chose the weights before seeing any data</h1>
   <p class="byline">Salmaan Barday, November 2026</p>
-  <div class="row">
+  <div class="intro">
     <div class="tldr">
       <p>Each task here is a yes or no question about a person, such as whether a doctor has ever told them they have
       high blood pressure. The data comes from health surveys, where each row is one respondent, with their age, sex,
@@ -165,11 +166,6 @@
       XGBoost never catch up, even with all the data. TabPFN, a model built for small tables, does after about 1,000.
       The surveys are from 2025 and came out after Opus 5.5's training cutoff, so it can't have seen them.</p>
     </div>
-    <dl class="nums">
-      <div><dt>0.805</dt><dd>AUC of the Opus 5.5 written NN, with no labelled rows</dd></div>
-      <div><dt>~1,000</dt><dd>Labelled rows TabPFN needs to catch up</dd></div>
-      <div><dt>3,500</dt><dd>Labelled rows logistic regression needs to get within 0.005</dd></div>
-    </dl>
   </div>
 </header>
 
