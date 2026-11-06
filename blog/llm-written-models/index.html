@@ -51,6 +51,7 @@
   table.tasks td.n, table.tasks th.n { text-align: right; font-variant-numeric: tabular-nums; }
   table.tasks td.n { color: var(--ink2); }
   .note { font-family: var(--sans); font-size: 13px; color: var(--muted); margin-top: 10px; }
+  table.allrows { margin-top: 28px; }
 
   .formula { font-size: clamp(12px, 1.6vw, 19px); margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
   .written { margin: 28px 0 8px; }
@@ -117,24 +118,51 @@
   <p class="byline">Salmaan Barday, November 2026</p>
   <div class="row">
     <div class="tldr">
-      <b>TL;DR</b>
       We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone,
       with no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic
-      regression trained on 3,500 labelled rows, and they beat TabPFN, XGBoost and logistic regression at every budget
-      up to 256 rows. TabPFN needs about 1,000 rows to catch up. The knowledge is linear, though, and once written down,
+      regression trained on 3,500 labelled rows. XGBoost and logistic regression never pass them, even with every row.
+      Only TabPFN does, once it has about 1,000 labelled rows. The knowledge is linear, though, and once written down,
       a few labelled rows did not improve it.
     </div>
     <dl class="qa">
       <div><dt>Can it write a useful model with no data?</dt>
         <dd><strong>Yes.</strong> 0.805 AUC, the same as logistic regression on 3,500 rows.</dd></div>
       <div><dt>Does that beat a tabular foundation model?</dt>
-        <dd><strong>Yes, until about 1,000 rows.</strong> At 4 to 16 rows it wins on 17 of 17 tasks.</dd></div>
+        <dd><strong>Yes, until about 1,000 rows.</strong> With all 3,500 rows TabPFN leads by 0.003. XGBoost and
+          logistic regression never pass it.</dd></div>
       <div><dt>Can it learn by editing its own weights?</dt>
         <dd><strong>Not here.</strong> Its first draft was already as good as 3,500 rows. Editing it with 16 or 64
           labelled rows changed nothing.</dd></div>
     </dl>
   </div>
 </header>
+
+<section>
+  <div class="row">
+    <div>
+      <h2>Where this started</h2>
+      <p>Earlier this month, a group at MIT showed that frontier models can write the weights of small neural networks
+      directly, with no training data and no gradients, and that those networks can beat agents trained with
+      reinforcement learning. It made us wonder about a far more common case. Most everyday data science is predicting
+      an outcome from a table, and the standard tool is gradient descent on labelled rows.</p>
+      <p>If a model can choose good weights for a game-playing network, can it choose them for a risk model, before it
+      has seen a single row? And if it can, how much data is that knowledge worth?</p>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <dl>
+          <dt>The post that prompted this</dt>
+          <dd><a href="https://rikiyat.github.io/blog/weight-space-programming/">Sparks of Weight-Space Programming</a>,
+            by Takehi, Teoh, Zhang and Khattab at MIT CSAIL, November 2026. A frontier model wrote game-playing networks
+            from the rules alone and beat PPO.</dd>
+          <dt>What we asked instead</dt>
+          <dd>The same idea for prediction from tables, against gradient descent, XGBoost and TabPFN, on data the model
+            cannot have seen.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section>
   <div class="row">
@@ -210,17 +238,30 @@
     <div>
       <p class="lede">With zero rows the written network scores 0.805. TabPFN needs about 1,000 labelled rows to match
       it, and logistic regression needs all 3,500.</p>
-      <p>Training the network on the rows, with a pull toward the written weights, keeps it there. Past 1,000 rows
-      TabPFN edges ahead, reaching 0.811 with all 3,500 against 0.808 for the written network. Pooled with our pilot
-      (11 more datasets), Opus 5.5's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once the
-      memorised datasets are removed.</p>
+      <p>Even with every row, XGBoost (0.767) and logistic regression (0.800) stay below it. Only TabPFN pulls ahead,
+      and only in the large-data regime, reaching 0.811 with all 3,500 rows against 0.808 for the written network
+      trained on the same rows.</p>
+      <p>With few rows the gap is large. Pooled with our pilot (11 more datasets), Opus 5.5's priors beat TabPFN at 4 to
+      16 rows on 17 of 17 tasks, and on 13 of 13 once the memorised datasets are removed.</p>
     </div>
+    <div>
     <dl class="nums">
       <div><dt>0.805</dt><dd>Opus 5.5's network, no labelled rows</dd></div>
       <div><dt>~1,000</dt><dd>Rows TabPFN needs to catch up</dd></div>
       <div><dt>3,500</dt><dd>Rows logistic regression needs to catch up</dd></div>
       <div><dt>17/17</dt><dd>Tasks where Opus 5.5's priors beat TabPFN at 4 to 16 rows</dd></div>
     </dl>
+    <table class="tasks allrows">
+      <thead><tr><th>With all 3,500 training rows</th><th class="n">AUC</th></tr></thead>
+      <tbody>
+        <tr><td>TabPFN</td><td class="n">0.811</td></tr>
+        <tr><td>Opus 5.5's network, trained on them</td><td class="n">0.808</td></tr>
+        <tr><td>Opus 5.5's network, no rows at all</td><td class="n">0.805</td></tr>
+        <tr><td>Logistic regression</td><td class="n">0.800</td></tr>
+        <tr><td>XGBoost</td><td class="n">0.767</td></tr>
+      </tbody>
+    </table>
+    </div>
   </div>
 </section>
 
@@ -260,8 +301,7 @@
   <div class="row">
     <div>
       <h2>Can it learn by editing its own weights?</h2>
-      <p>Inspired by <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>,
-      we gave Opus 5.5 a feedback loop and two rounds to revise its network.</p>
+      <p>Closer to the MIT setup, we also gave Opus 5.5 a feedback loop and two rounds to revise its own network.</p>
       <p class="lede">After the first draft, nothing improved it.</p>
       <p>Neither round of edits beat the network it started with (+0.0004), and edits that saw the rows did no better
       than edits without them (+0.0001). The edits did beat plain gradient descent on 6 of 6 tasks, by 0.005, but only
@@ -269,6 +309,11 @@
       was.</p>
       <p>The honest caveat is that there was no headroom. The first draft already matched 3,500 rows, so a few dozen
       could not add much. A fair test needs tasks where the prior is weaker.</p>
+      <p>We also ran only two rounds, and the second changed little over the first. The MIT setup was much richer.
+      Their model could run its network up to 50 times and keep only the changes that helped, and their stronger
+      results came with that feedback. A loop that long was beyond our compute budget for this study, and ours had no
+      way to test an edit before committing to it. A longer loop like theirs, on tasks with headroom, is the obvious
+      next step.</p>
     </div>
     <div class="side">
       <div class="panel">
@@ -279,6 +324,32 @@
           <dt>It returns</dt><dd>A revised network, in two rounds.</dd>
           <dt>Compared with</dt><dd>Gradient descent from the same network on the same rows, a tuned gradient descent,
             and the same revision with no rows at all.</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="row">
+    <div>
+      <h2>What this could mean beyond these tasks</h2>
+      <p>Gradient descent starts from random weights and learns everything from the data, which is why it needs so much
+      of it. These results suggest a different split of the work. Let the model write down what is already known, and
+      let the data correct it. Here the written model was worth about a thousand labelled rows to the strongest
+      baseline, before any data arrived.</p>
+      <p>That matters most where labels are scarce or expensive, such as a new clinic, a new programme or a first survey
+      in a new place. It also raises a broader question for any problem we usually hand to an optimiser. How much of the
+      search is rediscovering what is already known, and could a model that knows it start much closer to the
+      answer?</p>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <dl>
+          <dt>The catch</dt>
+          <dd>It is only as good as the knowledge behind it. US health surveys are among the best-studied data there is.
+            Where the research is thin, the written model will be weaker, and that is exactly where the data, and
+            whether the model can learn from it, matter most.</dd>
         </dl>
       </div>
     </div>
