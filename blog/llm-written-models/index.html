@@ -156,11 +156,14 @@
   <p class="byline">Salmaan Barday, November 2026</p>
   <div class="row">
     <div class="tldr">
-      <p>Before it saw a single row of data, Claude Opus 5.5 set every weight of a small neural network for predicting
-      health outcomes. That network does as well as logistic regression trained on 3,500 labelled rows.</p>
-      <p>It only had the column descriptions for six tasks built from 2025 health surveys, released after its training
-      cutoff. Logistic regression and XGBoost never catch up, even with all the data. TabPFN does, after about 1,000
-      labelled rows.</p>
+      <p>Each task here is a yes or no question about a person, such as whether a doctor has ever told them they have
+      high blood pressure. The data comes from health surveys, where each row is one respondent, with their age, sex,
+      income, smoking, other conditions and so on. A labelled row also has the answer. A model normally needs labelled
+      rows to learn from before it can predict anything.</p>
+      <p>Claude Opus 5.5 got none. It only saw the column descriptions, and set every weight of a small neural network
+      itself. That network does as well as logistic regression trained on 3,500 labelled rows. Logistic regression and
+      XGBoost never catch up, even with all the data. TabPFN, a model built for small tables, does after about 1,000.
+      The surveys are from 2025 and came out after Opus 5.5's training cutoff, so it can't have seen them.</p>
     </div>
     <dl class="nums">
       <div><dt>0.805</dt><dd>AUC of the Opus 5.5 written NN, with no labelled rows</dd></div>
@@ -173,7 +176,10 @@
 <section class="lead-fig">
   <figure>
     <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. The Opus 5.5 written NN stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77. The same NN with a normal random start follows logistic regression up to 256 rows, peaks at 0.738 and ends at 0.722."></a>
-    <figcaption>Mean AUC over the six 2025 tasks. Past 256 rows (shaded) goes beyond the pre-registered range, with two
+    <figcaption>How to read this. Each method is trained on the number of labelled rows on the x-axis, then tested on
+    1,500 other respondents it hasn't seen. AUC measures how well it ranks people by risk, where 0.5 is a coin flip and
+    1.0 is perfect. Each point is the mean over the six 2025 tasks. Past 256 rows (shaded) goes beyond the
+    pre-registered range, with two
     draws per point and a single fit on all rows at 3,500. The dashed line is the same NN with a normal random start
     and the same fixed training settings.</figcaption>
   </figure>
