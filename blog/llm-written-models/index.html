@@ -54,6 +54,20 @@
   table.allrows { margin-top: 28px; }
 
   .formula { font-size: clamp(12px, 1.6vw, 19px); margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+  .nn { margin: 0 0 22px; container-type: inline-size; }
+  .nn svg { display: block; width: 100%; height: auto; }
+  .nn-lin { stroke: var(--accent); stroke-width: 1.4; opacity: .55; }
+  .nn-hid { stroke: var(--ink2); stroke-width: 1.1; opacity: .45; }
+  .nn-in { fill: var(--bg); stroke: var(--ink2); stroke-width: 1.5; }
+  .nn-unit { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+  .nn-out { fill: var(--tint); stroke: var(--ink); stroke-width: 1.8; }
+  .nn-box { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
+  .nn-t { font: 500 15px var(--sans); fill: var(--ink); }
+  .nn-blue { fill: var(--accent); }
+  .nn-r { font: 500 9.5px var(--sans); fill: var(--ink2); }
+  .nn-s { font: 13px var(--sans); fill: var(--ink2); }
+  .nn-e { font: italic 13px var(--serif); fill: var(--ink2); }
+  .nn-dots { font: 600 18px var(--sans); fill: var(--muted); }
   .written { margin: 28px 0 8px; }
   .written h3 { margin-bottom: 4px; }
   .unit { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; padding: 16px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
@@ -100,6 +114,9 @@
     body { font-size: 17px; }
     .unit { grid-template-columns: 1fr; gap: 6px; }
     .formula { font-size: 13.5px; }
+  }
+  @container (max-width: 480px) {
+    .nn-t { font-size: 18px; } .nn-s, .nn-e { font-size: 15.5px; } .nn-r { font-size: 10.5px; }
   }
   @media (max-width: 420px) {
     .formula { font-size: 12.5px; }
@@ -201,6 +218,45 @@
       <p>From the schema alone, it writes a small network in raw units, with a linear part and 16 hidden units, as
       JSON.</p>
       <div class="formula"><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mop"><span class="mord mathrm">logit</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:2.4638em;vertical-align:-1.4138em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:3.1032em;vertical-align:-1.3021em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8011em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">16</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mord"><span class="delimsizing size1">(</span></span><span class="mord"><span class="mord mathnormal">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.2858em;vertical-align:-0.4358em;"></span><span class="mop"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.162em;"><span style="top:-2.4003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4358em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">kj</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
+      <figure class="nn" role="img" aria-label="Diagram of the network Opus 5.5 writes. Each input column, such as age, sex, BMI and diabetes, feeds a linear part and a few of 16 hidden ReLU units. Each hidden unit uses only a few inputs. The linear part and the hidden units add up, with an intercept, to the log-odds of the outcome.">
+        <svg viewBox="12 6 578 306" xmlns="http://www.w3.org/2000/svg">
+          <line x1="134" y1="62" x2="250" y2="36" class="nn-lin"/>
+          <line x1="134" y1="116" x2="250" y2="36" class="nn-lin"/>
+          <line x1="134" y1="170" x2="250" y2="36" class="nn-lin"/>
+          <line x1="134" y1="224" x2="250" y2="36" class="nn-lin"/>
+          <line x1="134" y1="62" x2="305" y2="104" class="nn-hid"/>
+          <line x1="134" y1="62" x2="305" y2="152" class="nn-hid"/>
+          <line x1="134" y1="116" x2="305" y2="152" class="nn-hid"/>
+          <line x1="134" y1="224" x2="305" y2="200" class="nn-hid"/>
+          <line x1="134" y1="62" x2="305" y2="200" class="nn-hid"/>
+          <line x1="134" y1="170" x2="305" y2="262" class="nn-hid"/>
+          <line x1="335" y1="104" x2="510" y2="166" class="nn-hid"/>
+          <line x1="335" y1="152" x2="510" y2="166" class="nn-hid"/>
+          <line x1="335" y1="200" x2="510" y2="166" class="nn-hid"/>
+          <line x1="335" y1="262" x2="510" y2="166" class="nn-hid"/>
+          <line x1="390" y1="36" x2="518" y2="146" class="nn-lin"/>
+          <circle cx="126" cy="62" r="8" class="nn-in"/><text x="108" y="67" text-anchor="end" class="nn-t">age</text>
+          <circle cx="126" cy="116" r="8" class="nn-in"/><text x="108" y="121" text-anchor="end" class="nn-t">sex = male</text>
+          <circle cx="126" cy="170" r="8" class="nn-in"/><text x="108" y="175" text-anchor="end" class="nn-t">BMI</text>
+          <circle cx="126" cy="224" r="8" class="nn-in"/><text x="108" y="229" text-anchor="end" class="nn-t">diabetes</text>
+          <text x="126" y="270" text-anchor="middle" class="nn-dots">⋮</text>
+          <text x="126" y="300" text-anchor="middle" class="nn-s">about 75 more</text>
+          <rect x="250" y="16" width="140" height="40" rx="8" class="nn-box"/><text x="320" y="41" text-anchor="middle" class="nn-t nn-blue">linear part, a·x</text>
+          <circle cx="320" cy="104" r="15" class="nn-unit"/><text x="320" y="108" text-anchor="middle" class="nn-r">ReLU</text>
+          <circle cx="320" cy="152" r="15" class="nn-unit"/><text x="320" y="156" text-anchor="middle" class="nn-r">ReLU</text>
+          <circle cx="320" cy="200" r="15" class="nn-unit"/><text x="320" y="204" text-anchor="middle" class="nn-r">ReLU</text>
+          <circle cx="320" cy="262" r="15" class="nn-unit"/><text x="320" y="266" text-anchor="middle" class="nn-r">ReLU</text>
+          <text x="320" y="236" text-anchor="middle" class="nn-dots">⋮</text>
+          <text x="320" y="300" text-anchor="middle" class="nn-s">16 hidden units, ReLU(b + w·x)</text>
+          <text x="320" y="78" text-anchor="middle" class="nn-e">e.g. ReLU(age − 65)</text>
+          <circle cx="540" cy="166" r="30" class="nn-out"/><text x="540" y="171" text-anchor="middle" class="nn-t">logit p</text>
+          <text x="540" y="216" text-anchor="middle" class="nn-s">+ intercept c</text>
+        </svg>
+      </figure>
+      <p>Each hidden unit uses only a few columns, so it can capture a threshold or an interaction, like risk rising faster
+      after 65. Opus 5.5 also writes a simpler thing, a prior. For each column it gives its best guess of the effect
+      and how sure it is, and a logistic regression starts from those guesses and moves only as far as the data pushes
+      it. We call these Opus 5.5's priors below.</p>
       <p>We average five such networks per task, then follow the usual few-shot protocol. We draw k labelled rows (4 to
       256, five draws each), fit, and score AUC on 1,500 held-out rows.</p>
     </div>
@@ -277,7 +333,7 @@
     <div class="col">
       <h3>Add something on top</h3>
       <div class="item"><div class="lab">Hidden units instead of straight lines</div><div class="vals">0.802 → 0.805</div><div class="d">+0.003</div><div class="track"><span class="pos" style="width:1.2%"></span></div></div>
-      <div class="item"><div class="lab">Two rounds of editing it with the rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.804</div><div class="d">+0.000</div><div class="track"><span class="pos" style="width:0.8%"></span></div></div>
+      <div class="item"><div class="lab">A round of editing it with the rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.804</div><div class="d">+0.000</div><div class="track"><span class="pos" style="width:0.8%"></span></div></div>
       <div class="item"><div class="lab">Gradient descent on the same rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.798</div><div class="d">−0.005</div><div class="track"><span class="neg" style="width:2.0%"></span></div></div>
       <div class="item"><div class="lab">Scoring each row directly instead<span class="sub">on 300 test rows</span></div><div class="vals">0.807 → 0.802</div><div class="d">−0.004</div><div class="track"><span class="neg" style="width:1.6%"></span></div></div>
     </div>
@@ -287,7 +343,7 @@
   <div class="row">
     <div>
       <p>The value is in what the model knows, not in how the model is built. Remove the knowledge and the score
-      falls toward chance. Everything added on top, from hidden units to feedback rounds, leaves it where it was.</p>
+      falls toward chance. Everything added on top, from hidden units to a round of feedback, leaves it where it was.</p>
     </div>
     <div>
       <p>The hidden units read like an epidemiologist's notes, yet together they add 0.003. Writing the model and
@@ -301,19 +357,18 @@
   <div class="row">
     <div>
       <h2>Can it learn by editing its own weights?</h2>
-      <p>Closer to the MIT setup, we also gave Opus 5.5 a feedback loop and two rounds to revise its own network.</p>
+      <p>Closer to the MIT setup, we also gave Opus 5.5 a feedback loop to revise its own network.</p>
       <p class="lede">After the first draft, nothing improved it.</p>
-      <p>Neither round of edits beat the network it started with (+0.0004), and edits that saw the rows did no better
-      than edits without them (+0.0001). The edits did beat plain gradient descent on 6 of 6 tasks, by 0.005, but only
-      because gradient descent slightly damaged a network that was already good while the edits left it where it
-      was.</p>
+      <p>A round of edits left the network where it was (+0.0004), and edits that saw the rows did no better than a
+      revision with no rows at all (+0.0001). The edits did score about 0.006 above plain gradient descent, but
+      only because gradient descent slightly damaged a network that was already good while the edits left it
+      alone.</p>
       <p>The honest caveat is that there was no headroom. The first draft already matched 3,500 rows, so a few dozen
-      could not add much. A fair test needs tasks where the prior is weaker.</p>
-      <p>We also ran only two rounds, and the second changed little over the first. The MIT setup was much richer.
-      Their model could run its network up to 50 times and keep only the changes that helped, and their stronger
-      results came with that feedback. A loop that long was beyond our compute budget for this study, and ours had no
-      way to test an edit before committing to it. A longer loop like theirs, on tasks with headroom, is the obvious
-      next step.</p>
+      could not add much. A fair test needs tasks where its starting knowledge is weaker.</p>
+      <p>We show one round here, since a second changed nothing further. The MIT model could run its network up to 50
+      times and keep only the changes that helped, and their stronger results came with that feedback. We would like to
+      test many more rounds like that, on tasks with headroom, but that needs more API credits than this study
+      had.</p>
     </div>
     <div class="side">
       <div class="panel">
@@ -321,7 +376,7 @@
           <dt>Opus 5.5 sees</dt><dd>Its network's prediction on each of k = 16 or 64 training rows, the true labels, the
             loss, and what each hidden unit does.</dd>
           <dt>Not allowed</dt><dd>Any test row or test score.</dd>
-          <dt>It returns</dt><dd>A revised network, in two rounds.</dd>
+          <dt>It returns</dt><dd>A revised network.</dd>
           <dt>Compared with</dt><dd>Gradient descent from the same network on the same rows, a tuned gradient descent,
             and the same revision with no rows at all.</dd>
         </dl>
@@ -371,8 +426,6 @@
       <ul>
         <li>It is one model (Claude Opus 5.5) in one well-studied domain (US health surveys), with six new tasks. The
           rows are new, but the relationships are well documented.</li>
-        <li>The hidden layer and the edit loop add nothing here. Whether they help where the prior is weaker is
-          open.</li>
       </ul>
     </div>
   </div>
