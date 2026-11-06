@@ -52,7 +52,7 @@
   table.tasks td.n { color: var(--ink2); }
   .note { font-family: var(--sans); font-size: 13px; color: var(--muted); margin-top: 10px; }
 
-  .formula { font-size: 19px; margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+  .formula { font-size: clamp(12px, 1.6vw, 19px); margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
   .written { margin: 28px 0 8px; }
   .written h3 { margin-bottom: 4px; }
   .unit { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; padding: 16px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
@@ -62,7 +62,7 @@
   .unit .nm { display: block; font-family: var(--sans); font-style: normal; font-size: 13px; color: var(--muted); margin-top: 2px; }
 
   .nums { font-family: var(--sans); border-top: 2px solid var(--ink); margin: 0; }
-  .nums div { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .nums div { display: grid; grid-template-columns: 92px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
   .nums dt { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   .nums dd { margin: 0; font-size: 15px; color: var(--ink2); line-height: 1.45; }
 
@@ -71,6 +71,17 @@
   figure img { width: 100%; height: auto; display: block; }
   figcaption { font-family: var(--sans); font-size: 14px; color: var(--ink2); max-width: 70ch; margin-top: 8px; line-height: 1.5; }
 
+  .ledger { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; margin: 8px 0 10px; font-family: var(--sans); }
+  .ledger h3 { color: var(--ink); font-size: 17px; border-top: 2px solid var(--ink); padding-top: 12px; margin-bottom: 4px; }
+  .item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 14px; row-gap: 8px; padding: 14px 0 16px; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .item .lab { font-size: 15px; line-height: 1.4; }
+  .item .sub { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+  .item .vals { font-size: 14px; color: var(--ink2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .item .d { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: right; }
+  .item .track { grid-column: 1 / -1; height: 8px; background: var(--tint); border-radius: 4px; overflow: hidden; }
+  .item .track span { display: block; height: 100%; border-radius: 4px; min-width: 2px; }
+  .item .track .neg { background: #e34948; }
+  .item .track .pos { background: var(--accent); }
   .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
   .cols2 h3 { color: var(--ink); font-size: 17px; border-top: 2px solid var(--ink); padding-top: 12px; }
   .cols2 ul { margin: 0; padding-left: 20px; }
@@ -78,8 +89,8 @@
   footer { border-top: 1px solid var(--rule); margin-top: 32px; padding: 26px 0 72px; font-family: var(--sans); font-size: 14px; color: var(--ink2); }
   footer p { max-width: 80ch; }
 
-  @media (max-width: 1000px) {
-    .row, .cols2 { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  @media (max-width: 760px) {
+    .row, .cols2, .ledger { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   }
   @media (max-width: 860px) {
     .wrap { padding: 0 18px; }
@@ -110,13 +121,14 @@
       We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone,
       with no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic
       regression trained on 3,500 labelled rows, and they beat TabPFN, XGBoost and logistic regression at every budget
-      up to 256 rows. The knowledge is linear, though, and once written down, a few labelled rows did not improve it.
+      up to 256 rows. TabPFN needs about 1,000 rows to catch up. The knowledge is linear, though, and once written down,
+      a few labelled rows did not improve it.
     </div>
     <dl class="qa">
       <div><dt>Can it write a useful model with no data?</dt>
         <dd><strong>Yes.</strong> 0.805 AUC, the same as logistic regression on 3,500 rows.</dd></div>
       <div><dt>Does that beat a tabular foundation model?</dt>
-        <dd><strong>Yes.</strong> Ahead of TabPFN up to 256 rows, and on 17 of 17 tasks at 4 to 16 rows.</dd></div>
+        <dd><strong>Yes, until about 1,000 rows.</strong> At 4 to 16 rows it wins on 17 of 17 tasks.</dd></div>
       <div><dt>Can it learn by editing its own weights?</dt>
         <dd><strong>Not here.</strong> Its first draft was already as good as 3,500 rows. Editing it with 16 or 64
           labelled rows changed nothing.</dd></div>
@@ -190,22 +202,23 @@
 <section>
   <h2>It starts where the data ends</h2>
   <figure>
-    <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows. Opus 5.5's written network stays near 0.80 from 0 to 256 rows. TabPFN rises from 0.60 to 0.78, XGBoost from 0.50 to 0.73, logistic regression from 0.58 to 0.71. A dashed line at 0.80 marks logistic regression trained on all 3,500 rows."></a>
-    <figcaption>Mean AUC over the six 2025 tasks. With no rows, the written network already sits at the level of
-    logistic regression trained on every row. TabPFN is still below it at 256.</figcaption>
+    <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. Opus 5.5's written network stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77."></a>
+    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes beyond the pre-registered range, with two
+    draws per point, and was added to see where the data catches up.</figcaption>
   </figure>
   <div class="row">
     <div>
-      <p class="lede">With zero rows the written network scores 0.805. Logistic regression needs all 3,500 rows to
-      reach 0.800.</p>
-      <p>Training the network on the rows, with a pull toward the written weights, keeps it there. Pooled with our
-      pilot (11 more datasets), Opus 5.5's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once
-      the memorised datasets are removed.</p>
+      <p class="lede">With zero rows the written network scores 0.805. TabPFN needs about 1,000 labelled rows to match
+      it, and logistic regression needs all 3,500.</p>
+      <p>Training the network on the rows, with a pull toward the written weights, keeps it there. Past 1,000 rows
+      TabPFN edges ahead, reaching 0.811 with all 3,500 against 0.808 for the written network. Pooled with our pilot
+      (11 more datasets), Opus 5.5's priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once the
+      memorised datasets are removed.</p>
     </div>
     <dl class="nums">
       <div><dt>0.805</dt><dd>Opus 5.5's network, no labelled rows</dd></div>
-      <div><dt>0.800</dt><dd>Logistic regression on all 3,500 rows</dd></div>
-      <div><dt>0.782</dt><dd>TabPFN on 256 rows</dd></div>
+      <div><dt>~1,000</dt><dd>Rows TabPFN needs to catch up</dd></div>
+      <div><dt>3,500</dt><dd>Rows logistic regression needs to catch up</dd></div>
       <div><dt>17/17</dt><dd>Tasks where Opus 5.5's priors beat TabPFN at 4 to 16 rows</dd></div>
     </dl>
   </div>
@@ -213,22 +226,32 @@
 
 <section>
   <h2>What carries it</h2>
-  <figure>
-    <a href="fig2_what_carries_the_gain.png"><img src="fig2_what_carries_the_gain.png" alt="Dot plot of mean AUC. With no labelled rows, the written network, its straight-line version, the linear priors and direct scoring all sit near 0.80, while hiding column names gives 0.615 and shuffling columns 0.565. With 16 or 64 rows, the first draft, the edited network and the network revised without rows all sit near 0.80, gradient descent at 0.798 and TabPFN at 0.718."></a>
-    <figcaption>Mean AUC over the six tasks. Everything that keeps the knowledge lands near 0.80, and nothing added on top
-    moves it. Remove the knowledge and the score drops toward chance.</figcaption>
-  </figure>
+  <div class="ledger">
+    <div class="col">
+      <h3>Take the knowledge away</h3>
+      <div class="item"><div class="lab">Move the written weights onto shuffled columns</div><div class="vals">0.805 → 0.565</div><div class="d">−0.240</div><div class="track"><span class="neg" style="width:96.0%"></span></div></div>
+      <div class="item"><div class="lab">Hide the column names while it writes</div><div class="vals">0.802 → 0.615</div><div class="d">−0.187</div><div class="track"><span class="neg" style="width:74.8%"></span></div></div>
+      <div class="item"><div class="lab">Same network, started from random weights<span class="sub">with 4 to 32 rows</span></div><div class="vals">0.800 → 0.617</div><div class="d">−0.183</div><div class="track"><span class="neg" style="width:73.2%"></span></div></div>
+    </div>
+    <div class="col">
+      <h3>Add something on top</h3>
+      <div class="item"><div class="lab">Hidden units instead of straight lines</div><div class="vals">0.802 → 0.805</div><div class="d">+0.003</div><div class="track"><span class="pos" style="width:1.2%"></span></div></div>
+      <div class="item"><div class="lab">Two rounds of editing it with the rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.804</div><div class="d">+0.000</div><div class="track"><span class="pos" style="width:0.8%"></span></div></div>
+      <div class="item"><div class="lab">Gradient descent on the same rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.798</div><div class="d">−0.005</div><div class="track"><span class="neg" style="width:2.0%"></span></div></div>
+      <div class="item"><div class="lab">Scoring each row directly instead<span class="sub">on 300 test rows</span></div><div class="vals">0.807 → 0.802</div><div class="d">−0.004</div><div class="track"><span class="neg" style="width:1.6%"></span></div></div>
+    </div>
+  </div>
+  <p class="note">Mean AUC over the six tasks, before and after each change. Every bar uses the same scale, so a
+  change of 0.25 would fill its track.</p>
   <div class="row">
     <div>
-      <p>It is knowledge, not structure. Move the same weights onto shuffled columns and the AUC falls to 0.565. Hide
-      the column names and most of the gain disappears on the mental-health tasks. Start the same network from random
-      weights and it loses 0.18.</p>
+      <p>The value is in what the model knows, not in how the model is built. Remove the knowledge and the score
+      falls toward chance. Everything added on top, from hidden units to feedback rounds, leaves it where it was.</p>
     </div>
     <div>
-      <p>The hidden layer, though, adds almost nothing. Units like the ones above read like an epidemiologist's notes,
-      yet replacing each with its own straight-line approximation costs only 0.003. Asking Opus 5.5 to predict each row
-      directly gives the same accuracy, but writing the model takes one call per task instead of one per row, and you
-      can read it.</p>
+      <p>The hidden units read like an epidemiologist's notes, yet together they add 0.003. Writing the model and
+      scoring rows directly land at the same accuracy, but writing takes one call per task instead of one per row,
+      and you can read the result.</p>
     </div>
   </div>
 </section>
@@ -267,8 +290,8 @@
     <div>
       <h3>What this shows</h3>
       <ul>
-        <li>An LLM's knowledge, written down as a model, transfers to genuinely new data, and on these tasks it is
-          worth thousands of labels.</li>
+        <li>An LLM's knowledge, written down as a model, transfers to genuinely new data. On these tasks it is worth
+          about 1,000 labelled rows to TabPFN and 3,500 to logistic regression.</li>
         <li>The result holds whether the knowledge is written as priors, as a network, or as direct predictions.</li>
       </ul>
     </div>
