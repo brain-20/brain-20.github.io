@@ -544,20 +544,6 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
 <section>
   <div class="row">
     <div>
-      <h2>Can it learn from feedback?</h2>
-      <p>I also tried a quick version of the MIT feedback loop, where Opus 5.5 saw how its network did on 16 or 64
-      labelled rows and revised it. One round changed almost nothing (+0.0004 AUC), and a revision with no rows did
-      just as well.</p>
-      <p>That wasn't a fair test. The first draft was already as good as 3,500 rows, I ran a single round where MIT
-      allowed up to 50 runs, and I didn't put much effort into it. I'd like to try it properly later, on tasks where
-      Opus 5.5 knows less, once I have the API credits.</p>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="row">
-    <div>
       <h2>Why this might matter</h2>
       <p>Gradient descent starts from random weights and learns everything from the data, which is why it needs so much
       of it. Here a model wrote down what's already known and the data only had to correct it. Before any data came in,
@@ -590,7 +576,7 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
       <h3>What it doesn't</h3>
       <ul>
         <li>This is one model (Claude Opus 5.5) in one well-studied area (US health surveys), on six new tasks.</li>
-        <li>Whether the model can improve its own network from data. I only tried one quick round of feedback.</li>
+        <li>Whether the model can improve its own network from data. One quick round of feedback on 16 or 64 rows changed nothing, but the network had little room to improve. I'd like to test this properly later.</li>
       </ul>
     </div>
   </div>
