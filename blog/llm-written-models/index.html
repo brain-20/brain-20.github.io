@@ -30,6 +30,10 @@
   .byline { font-family: var(--sans); font-size: 15px; color: var(--ink2); margin: 0 0 40px; }
   .tldr { font-size: 19px; line-height: 1.65; }
   .tldr b { font-family: var(--sans); font-weight: 600; font-size: 15px; display: block; margin-bottom: 6px; color: var(--ink2); }
+  .lead-fig { padding-top: 0; border-top: 0; }
+  header:has(+ .lead-fig) { padding-bottom: 8px; }
+  .lead-fig figure { margin-top: 0; }
+  .card-intro { margin: 24px 0 8px; }
   .qa { font-family: var(--sans); margin: 0; border-top: 2px solid var(--ink); }
   .qa div { padding: 14px 0 15px; border-bottom: 1px solid var(--rule); }
   .qa dt { font-size: 14px; color: var(--ink2); margin-bottom: 3px; }
@@ -154,34 +158,58 @@
     <div class="tldr">
       <p>Before it saw a single row of data, Claude Opus 5.5 set every weight of a small neural network for predicting
       health outcomes. That network does as well as logistic regression trained on 3,500 labelled rows.</p>
-      <p>I only gave it the column descriptions for six prediction tasks, built from 2025 health surveys that came out
-      after its training cutoff. Logistic regression and XGBoost never catch up, even with all the data. TabPFN does,
-      after about 1,000 labelled rows. Most of what Opus 5.5 writes down turns out to be linear, and I haven't yet
-      properly tested whether it can improve its network from data.</p>
+      <p>It only had the column descriptions for six tasks built from 2025 health surveys, released after its training
+      cutoff. Logistic regression and XGBoost never catch up, even with all the data. TabPFN does, after about 1,000
+      labelled rows.</p>
     </div>
-    <dl class="qa">
-      <div><dt>Can it write a useful model with no data?</dt>
-        <dd><strong>Yes.</strong> 0.805 AUC, slightly above logistic regression on all 3,500 rows (0.800).</dd></div>
-      <div><dt>Does it beat a tabular foundation model?</dt>
-        <dd><strong>Up to about 1,000 rows.</strong> With all 3,500, TabPFN is ahead by 0.003. XGBoost and logistic
-          regression never get past it.</dd></div>
-      <div><dt>Can it improve its weights from feedback?</dt>
-        <dd><strong>Not tested properly yet.</strong> One quick round of edits on 16 or 64 rows changed nothing.</dd></div>
+    <dl class="nums">
+      <div><dt>0.805</dt><dd>AUC of the Opus 5.5 written NN, with no labelled rows</dd></div>
+      <div><dt>~1,000</dt><dd>Labelled rows TabPFN needs to catch up</dd></div>
+      <div><dt>3,500</dt><dd>Labelled rows logistic regression needs to get within 0.005</dd></div>
     </dl>
   </div>
 </header>
+
+<section class="lead-fig">
+  <figure>
+    <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. The Opus 5.5 written NN stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77. The same NN with a normal random start follows logistic regression up to 256 rows, peaks at 0.738 and ends at 0.722."></a>
+    <figcaption>Mean AUC over the six 2025 tasks. Past 256 rows (shaded) goes beyond the pre-registered range, with two
+    draws per point and a single fit on all rows at 3,500. The dashed line is the same NN with a normal random start
+    and the same fixed training settings.</figcaption>
+  </figure>
+  <div class="row">
+    <div>
+      <p>TabPFN only pulls ahead with lots of data, finishing at 0.811 against 0.808 for the written network trained on
+      the same 3,500 rows. XGBoost tops out at 0.767.</p>
+      <p>The dashed line is the same network trained the same way, from a normal random start. It does no better than
+      logistic regression up to 256 rows and ends at 0.722 with all of them, so the head start comes from Opus 5.5's
+      weights, not the architecture. Its training settings were fixed in advance and never tuned, so a tuned version
+      would do better.</p>
+    </div>
+    <div>
+    <table class="tasks allrows">
+      <thead><tr><th>With all 3,500 training rows</th><th class="n">AUC</th></tr></thead>
+      <tbody>
+        <tr><td>TabPFN</td><td class="n">0.811</td></tr>
+        <tr><td>Opus 5.5 written NN, trained on them</td><td class="n">0.808</td></tr>
+        <tr><td>Opus 5.5 written NN, no rows</td><td class="n">0.805</td></tr>
+        <tr><td>Logistic regression</td><td class="n">0.800</td></tr>
+        <tr><td>XGBoost</td><td class="n">0.767</td></tr>
+        <tr><td>Same NN, normal start</td><td class="n">0.722</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
 
 <section>
   <div class="row">
     <div>
       <h2>Where this started</h2>
       <p>Earlier this month a group at MIT showed that frontier models can write the weights of small neural networks
-      directly, with no training data and no gradients. Some of those networks beat agents trained with reinforcement
-      learning.</p>
-      <p>That got me thinking about a much more ordinary problem. A lot of everyday data science is predicting an
-      outcome from a table, and the usual tool is gradient descent on labelled rows. If a model can pick good weights
-      for a network that plays a game, can it pick them for a risk model before seeing any data? And if it can, how
-      many labelled rows is that worth?</p>
+      directly, with no training data or gradients, and that some of those networks beat agents trained with
+      reinforcement learning. I wanted to know whether this works for the most common job in data science, predicting
+      an outcome from a table, and how many labelled rows that knowledge is worth.</p>
     </div>
     <div class="side">
       <div class="panel">
@@ -190,9 +218,6 @@
           <dd><a href="https://rikiyat.github.io/blog/weight-space-programming/">Sparks of Weight-Space Programming</a>,
             by Takehi, Teoh, Zhang and Khattab at MIT CSAIL, November 2026. A frontier model wrote game-playing networks
             from the rules and source code alone and beat PPO.</dd>
-          <dt>What I asked instead</dt>
-          <dd>The same idea for predicting from tables, compared with gradient descent, XGBoost and TabPFN, on data the
-            model can't have seen.</dd>
         </dl>
       </div>
     </div>
@@ -203,14 +228,13 @@
   <div class="row">
     <div>
       <h2>Why the data had to be new</h2>
-      <p>It's hard to trust results on LLMs and tabular data, because most benchmark datasets are online. In my pilot
-      on the <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite (since renamed TabLens), Opus 5.5 could
-      reproduce rows from 4 of the 16 datasets. So I built six tasks from surveys published after its June 2026
-      training cutoff, the CDC's <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a>
-      (released August 2026) and <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026).</p>
-      <p>The rows are new, but the epidemiology isn't, and that's what I wanted to measure. How much is the model's
-      existing knowledge worth on data it can't have memorised? I wrote down and hashed every test before any reply
-      came back.</p>
+      <p>Most tabular benchmarks are online, so a model may simply remember them. In my pilot on the
+      <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite (since renamed TabLens), Opus 5.5 could reproduce
+      rows from 4 of the 16 datasets. So I built six tasks from surveys published after its June 2026 training cutoff,
+      the CDC's <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a> (released August 2026)
+      and <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026).</p>
+      <p>The rows are new, but the epidemiology isn't. I wrote down and hashed every test before any reply came
+      back.</p>
     </div>
     <div class="side">
       <table class="tasks">
@@ -238,14 +262,12 @@
       units.</p>
       <div class="formula"><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mop"><span class="mord mathrm">logit</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:2.4638em;vertical-align:-1.4138em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:3.1032em;vertical-align:-1.3021em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8011em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">16</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mord"><span class="delimsizing size1">(</span></span><span class="mord"><span class="mord mathnormal">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.2858em;vertical-align:-0.4358em;"></span><span class="mop"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.162em;"><span style="top:-2.4003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4358em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">kj</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
       <p>Each hidden unit looks at a few columns, so it can encode a threshold or an interaction, such as risk rising more
-      slowly with age after 65. Opus 5.5 doesn't write the intercept c. That gets fitted from the labelled rows, when
-      there are any.</p>
-      <p>I also had Opus 5.5 write something simpler, a prior. For each column it gives a best guess of the effect and
-      how confident it is. A logistic regression then starts from those guesses and only moves as far as the data
-      pushes it. That's what I mean by Opus 5.5's priors further down.</p>
-      <p>Each task gets five of these networks, averaged. Then I follow the usual few-shot setup. I draw k labelled
-      rows (4 to 256, five draws each), fit, and score AUC on 1,500 held-out rows. Here's one of the five networks for
-      high blood pressure, exactly as it came back.</p>
+      slowly with age after 65. The intercept c isn't written. It's fitted from the labelled rows, when there are any.
+      Each task gets five networks, averaged. I then draw k labelled rows (4 to 256, five draws each), fit, and score
+      AUC on 1,500 held-out rows.</p>
+      <p>Opus 5.5 also writes priors, a best guess of each column's effect and how sure it is. A logistic regression
+      starts from those guesses and only moves as far as the data pushes it. Pooled with my pilot (11 more datasets),
+      these priors beat TabPFN at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 without the memorised datasets.</p>
     </div>
     <div class="side">
       <div class="panel">
@@ -259,6 +281,7 @@
       </div>
     </div>
   </div>
+  <p class="card-intro">One of the five networks for high blood pressure, exactly as it came back:</p>
   <figure class="card" aria-label="One of the networks Opus 5.5 wrote for high blood pressure, with the prompt it was given">
     <div class="card-top"><b>High blood pressure</b><span>BRFSS 2025 · one of the five networks Opus 5.5 wrote for this task, exactly as returned</span></div>
     <div class="card-body">
@@ -497,58 +520,15 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
 </section>
 
 <section>
-  <h2>How many rows it's worth</h2>
-  <figure>
-    <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. The Opus 5.5 written NN stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77. The same NN with a normal random start follows logistic regression up to 256 rows, peaks at 0.738 and ends at 0.722."></a>
-    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes past the pre-registered range. I added it to see
-    where the data catches up, with two draws per point and a single fit on all rows at 3,500. The dashed line is the
-    same NN with a normal random start and the same fixed training settings.</figcaption>
-  </figure>
-  <div class="row">
-    <div>
-      <p>With no rows, the written network scores 0.805. TabPFN needs about 1,000 labelled rows to match it. Logistic
-      regression gets within 0.005 only with all 3,500, and XGBoost tops out at 0.767. TabPFN does pull ahead once it
-      has lots of data, finishing at 0.811 against 0.808 for the written network trained on the same rows.</p>
-      <p>The dashed line is the same network, trained the same way, but from a normal random start. Up to 256 rows it's
-      no better than logistic regression. With more rows it falls behind, finishing at 0.722 while the written network
-      gets to 0.808. The head start comes from the weights Opus 5.5 picked rather than from the architecture. One
-      caveat is that I fixed this network's training settings in advance and never tuned them, so a tuned version
-      would do better. Logistic regression is a fairer guide to what the rows can do on their own.</p>
-      <p>The gap is widest with very few rows. Pooled with my pilot (11 more datasets), Opus 5.5's priors beat TabPFN
-      at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once I drop the datasets it had memorised.</p>
-    </div>
-    <div>
-    <dl class="nums">
-      <div><dt>0.805</dt><dd>Opus 5.5 written NN, no labelled rows</dd></div>
-      <div><dt>~1,000</dt><dd>Rows TabPFN needs to catch up</dd></div>
-      <div><dt>3,500</dt><dd>Rows logistic regression needs to get within 0.005</dd></div>
-      <div><dt>17/17</dt><dd>Tasks where Opus 5.5's priors beat TabPFN at 4 to 16 rows</dd></div>
-    </dl>
-    <table class="tasks allrows">
-      <thead><tr><th>With all 3,500 training rows</th><th class="n">AUC</th></tr></thead>
-      <tbody>
-        <tr><td>TabPFN</td><td class="n">0.811</td></tr>
-        <tr><td>Opus 5.5 written NN, trained on them</td><td class="n">0.808</td></tr>
-        <tr><td>Opus 5.5 written NN, no rows</td><td class="n">0.805</td></tr>
-        <tr><td>Logistic regression</td><td class="n">0.800</td></tr>
-        <tr><td>XGBoost</td><td class="n">0.767</td></tr>
-        <tr><td>Same NN, normal start</td><td class="n">0.722</td></tr>
-      </tbody>
-    </table>
-    </div>
-  </div>
-</section>
-
-<section>
   <div class="row">
     <div>
       <h2>Where the value comes from</h2>
-      <p>What matters is what Opus 5.5 knows about these particular columns. Put its weights on shuffled columns and the
-      AUC drops from 0.805 to 0.565, close to chance. Hide the column names while it writes its priors and they drop
+      <p>It's the knowledge about these particular columns that matters. Put Opus 5.5's weights on shuffled columns and
+      the AUC drops from 0.805 to 0.565, close to chance. Hide the column names while it writes its priors and they drop
       from 0.802 to 0.615.</p>
-      <p>The hidden units read like an epidemiologist's notes, but swapping each one for a straight line only costs
-      0.003. I also asked Opus 5.5 to score test rows directly, and it ended up in about the same place. Writing a model
-      is cheaper, though, at one call per task instead of one per row, and you can read what it did.</p>
+      <p>Most of that knowledge is linear. The hidden units read like an epidemiologist's notes, but swapping each one
+      for a straight line only costs 0.003. Asking Opus 5.5 to score test rows directly ends up in about the same place,
+      but a written model takes one call per task instead of one per row, and you can read it.</p>
     </div>
     <div>
     <dl class="nums">
@@ -565,13 +545,12 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
   <div class="row">
     <div>
       <h2>Can it learn from feedback?</h2>
-      <p>I also tried a quick version of the MIT feedback loop. Opus 5.5 saw how its network did on 16 or 64 labelled
-      rows and revised it. One round changed almost nothing (+0.0004 AUC), and a revision with no rows at all did just as
-      well, so there's no sign it learned anything from the rows.</p>
-      <p>This wasn't a fair test, and I didn't put much effort into it. The first draft was already as good as 3,500
-      rows, so a few dozen had little to add. I also ran a single round. The MIT setup let the model run its network
-      up to 50 times and keep only the changes that helped. I'd like to try this properly later, on tasks where
-      Opus 5.5 knows less, once I have the API credits to run it at scale.</p>
+      <p>I also tried a quick version of the MIT feedback loop, where Opus 5.5 saw how its network did on 16 or 64
+      labelled rows and revised it. One round changed almost nothing (+0.0004 AUC), and a revision with no rows did
+      just as well.</p>
+      <p>That wasn't a fair test. The first draft was already as good as 3,500 rows, I ran a single round where MIT
+      allowed up to 50 runs, and I didn't put much effort into it. I'd like to try it properly later, on tasks where
+      Opus 5.5 knows less, once I have the API credits.</p>
     </div>
   </div>
 </section>
@@ -580,21 +559,17 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
   <div class="row">
     <div>
       <h2>Why this might matter</h2>
-      <p>Gradient descent starts from random weights and has to learn everything from the data, which is why it needs so
-      much. These results suggest splitting the work differently. A model writes down what's already known, and the
-      data corrects it. Here, the written network was worth about 1,000 labelled rows to the strongest baseline before
-      any data came in.</p>
-      <p>That's most useful where labels are scarce or expensive, like a new clinic, a new programme or the first survey
-      in a new place. It also raises a wider question for any problem we'd normally hand to an optimiser. How much of
-      that search is just rediscovering things that are already known?</p>
+      <p>Gradient descent starts from random weights and learns everything from the data, which is why it needs so much
+      of it. Here a model wrote down what's already known and the data only had to correct it. Before any data came in,
+      that was worth about 1,000 labelled rows to the strongest baseline. It matters most where labels are scarce, like
+      a new clinic or the first survey in a new place.</p>
     </div>
     <div class="side">
       <div class="panel">
         <dl>
           <dt>The catch</dt>
           <dd>It's only as good as the knowledge behind it. US health surveys are some of the best-studied data there is.
-            Where the research is thin, the written model will be weaker, and that's exactly where the data, and whether
-            the model can learn from it, matter most.</dd>
+            Where the research is thin, the written model will be weaker.</dd>
         </dl>
       </div>
     </div>
@@ -606,23 +581,20 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
     <div>
       <h3>What this shows</h3>
       <ul>
-        <li>Knowledge that an LLM writes down as a model carries over to genuinely new data. On these tasks it's worth
-          about 1,000 labelled rows to TabPFN and 3,500 to logistic regression.</li>
-        <li>That holds whether the knowledge is written as priors, as a network or as direct predictions.</li>
+        <li>Knowledge an LLM writes down as a model carries over to genuinely new data. Here it's worth about 1,000
+          labelled rows to TabPFN and 3,500 to logistic regression.</li>
+        <li>That holds whether it's written as priors, as a network or as direct predictions.</li>
       </ul>
     </div>
     <div>
       <h3>What it doesn't</h3>
       <ul>
-        <li>This is one model (Claude Opus 5.5) in one well-studied area (US health surveys), on six new tasks. The rows
-          are new, but the relationships are well documented.</li>
-        <li>It doesn't show whether the model can improve its own network from data. I only tried one quick round of
-          feedback.</li>
+        <li>This is one model (Claude Opus 5.5) in one well-studied area (US health surveys), on six new tasks.</li>
+        <li>Whether the model can improve its own network from data. I only tried one quick round of feedback.</li>
       </ul>
     </div>
   </div>
 </section>
-
 <footer>
   <p>Every test was pre-registered, and every change from the plan is logged. The runs on the 2025 data cost about $13
   in API calls. A paper
