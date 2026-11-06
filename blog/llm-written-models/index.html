@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>An LLM chose the weights before seeing any data</title>
-<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN until it has about 1,000 labelled rows. A few labelled rows did not improve them.">
+<meta name="description" content="On 2025 health-survey data released after its training cutoff, Claude Opus 5.5 set every weight of a small neural network from the column descriptions alone. It matches logistic regression trained on 3,500 rows and beats TabPFN until TabPFN has about 1,000 labelled rows.">
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/katex/katex.min.css">
 <style>
@@ -154,9 +154,9 @@
     <div class="tldr">
       <p>Before it saw a single row of data, Claude Opus 5.5 set every weight of a small neural network for predicting
       health outcomes. That network does as well as logistic regression trained on 3,500 labelled rows.</p>
-      <p>We only gave it the column descriptions for six prediction tasks, built from 2025 health surveys that came out
+      <p>I only gave it the column descriptions for six prediction tasks, built from 2025 health surveys that came out
       after its training cutoff. Logistic regression and XGBoost never catch up, even with all the data. TabPFN does,
-      after about 1,000 labelled rows. Most of what Opus 5.5 writes down turns out to be linear, and we haven't yet
+      after about 1,000 labelled rows. Most of what Opus 5.5 writes down turns out to be linear, and I haven't yet
       properly tested whether it can improve its network from data.</p>
     </div>
     <dl class="qa">
@@ -178,7 +178,7 @@
       <p>Earlier this month a group at MIT showed that frontier models can write the weights of small neural networks
       directly, with no training data and no gradients. Some of those networks beat agents trained with reinforcement
       learning.</p>
-      <p>That got us thinking about a much more ordinary problem. A lot of everyday data science is predicting an
+      <p>That got me thinking about a much more ordinary problem. A lot of everyday data science is predicting an
       outcome from a table, and the usual tool is gradient descent on labelled rows. If a model can pick good weights
       for a network that plays a game, can it pick them for a risk model before seeing any data? And if it can, how
       many labelled rows is that worth?</p>
@@ -190,7 +190,7 @@
           <dd><a href="https://rikiyat.github.io/blog/weight-space-programming/">Sparks of Weight-Space Programming</a>,
             by Takehi, Teoh, Zhang and Khattab at MIT CSAIL, November 2026. A frontier model wrote game-playing networks
             from the rules and source code alone and beat PPO.</dd>
-          <dt>What we asked instead</dt>
+          <dt>What I asked instead</dt>
           <dd>The same idea for predicting from tables, compared with gradient descent, XGBoost and TabPFN, on data the
             model can't have seen.</dd>
         </dl>
@@ -203,13 +203,13 @@
   <div class="row">
     <div>
       <h2>Why the data had to be new</h2>
-      <p>It's hard to trust results on LLMs and tabular data, because most benchmark datasets are online. In our pilot
+      <p>It's hard to trust results on LLMs and tabular data, because most benchmark datasets are online. In my pilot
       on the <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite (since renamed TabLens), Opus 5.5 could
-      reproduce rows from 4 of the 16 datasets. So we built six tasks from surveys published after its June 2026
+      reproduce rows from 4 of the 16 datasets. So I built six tasks from surveys published after its June 2026
       training cutoff, the CDC's <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a>
       (released August 2026) and <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026).</p>
-      <p>The rows are new, but the epidemiology isn't, and that's what we wanted to measure. How much is the model's
-      existing knowledge worth on data it can't have memorised? We wrote down and hashed every test before any reply
+      <p>The rows are new, but the epidemiology isn't, and that's what I wanted to measure. How much is the model's
+      existing knowledge worth on data it can't have memorised? I wrote down and hashed every test before any reply
       came back.</p>
     </div>
     <div class="side">
@@ -240,10 +240,10 @@
       <p>Each hidden unit looks at a few columns, so it can encode a threshold or an interaction, such as risk rising more
       slowly with age after 65. Opus 5.5 doesn't write the intercept c. That gets fitted from the labelled rows, when
       there are any.</p>
-      <p>We also had Opus 5.5 write something simpler, a prior. For each column it gives a best guess of the effect and
+      <p>I also had Opus 5.5 write something simpler, a prior. For each column it gives a best guess of the effect and
       how confident it is. A logistic regression then starts from those guesses and only moves as far as the data
-      pushes it. That's what we mean by Opus 5.5's priors further down.</p>
-      <p>Each task gets five of these networks, averaged. Then we follow the usual few-shot setup. We draw k labelled
+      pushes it. That's what I mean by Opus 5.5's priors further down.</p>
+      <p>Each task gets five of these networks, averaged. Then I follow the usual few-shot setup. I draw k labelled
       rows (4 to 256, five draws each), fit, and score AUC on 1,500 held-out rows. Here's one of the five networks for
       high blood pressure, exactly as it came back.</p>
     </div>
@@ -500,7 +500,7 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
   <h2>How many rows it's worth</h2>
   <figure>
     <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. The Opus 5.5 written NN stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77. The same NN with a normal random start follows logistic regression up to 256 rows, peaks at 0.738 and ends at 0.722."></a>
-    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes past the pre-registered range. We added it to see
+    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes past the pre-registered range. I added it to see
     where the data catches up, with two draws per point and a single fit on all rows at 3,500. The dashed line is the
     same NN with a normal random start and the same fixed training settings.</figcaption>
   </figure>
@@ -512,10 +512,10 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
       <p>The dashed line is the same network, trained the same way, but from a normal random start. Up to 256 rows it's
       no better than logistic regression. With more rows it falls behind, finishing at 0.722 while the written network
       gets to 0.808. The head start comes from the weights Opus 5.5 picked rather than from the architecture. One
-      caveat is that we fixed this network's training settings in advance and never tuned them, so a tuned version
+      caveat is that I fixed this network's training settings in advance and never tuned them, so a tuned version
       would do better. Logistic regression is a fairer guide to what the rows can do on their own.</p>
-      <p>The gap is widest with very few rows. Pooled with our pilot (11 more datasets), Opus 5.5's priors beat TabPFN
-      at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once we drop the datasets it had memorised.</p>
+      <p>The gap is widest with very few rows. Pooled with my pilot (11 more datasets), Opus 5.5's priors beat TabPFN
+      at 4 to 16 rows on 17 of 17 tasks, and on 13 of 13 once I drop the datasets it had memorised.</p>
     </div>
     <div>
     <dl class="nums">
@@ -547,7 +547,7 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
       AUC drops from 0.805 to 0.565, close to chance. Hide the column names while it writes its priors and they drop
       from 0.802 to 0.615.</p>
       <p>The hidden units read like an epidemiologist's notes, but swapping each one for a straight line only costs
-      0.003. We also asked Opus 5.5 to score test rows directly, and it ended up in about the same place. Writing a model
+      0.003. I also asked Opus 5.5 to score test rows directly, and it ended up in about the same place. Writing a model
       is cheaper, though, at one call per task instead of one per row, and you can read what it did.</p>
     </div>
     <div>
@@ -565,13 +565,13 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
   <div class="row">
     <div>
       <h2>Can it learn from feedback?</h2>
-      <p>We also tried a quick version of the MIT feedback loop. Opus 5.5 saw how its network did on 16 or 64 labelled
+      <p>I also tried a quick version of the MIT feedback loop. Opus 5.5 saw how its network did on 16 or 64 labelled
       rows and revised it. One round changed almost nothing (+0.0004 AUC), and a revision with no rows at all did just as
       well, so there's no sign it learned anything from the rows.</p>
-      <p>This wasn't a fair test, and we didn't put much effort into it. The first draft was already as good as 3,500
-      rows, so a few dozen had little to add. We also ran a single round. The MIT setup let the model run its network
-      up to 50 times and keep only the changes that helped. We'd like to try this properly later, on tasks where
-      Opus 5.5 knows less, once we have the API credits to run it at scale.</p>
+      <p>This wasn't a fair test, and I didn't put much effort into it. The first draft was already as good as 3,500
+      rows, so a few dozen had little to add. I also ran a single round. The MIT setup let the model run its network
+      up to 50 times and keep only the changes that helped. I'd like to try this properly later, on tasks where
+      Opus 5.5 knows less, once I have the API credits to run it at scale.</p>
     </div>
   </div>
 </section>
@@ -616,7 +616,7 @@ Write your network for this dataset: a linear part and exactly 16 units, with th
       <ul>
         <li>This is one model (Claude Opus 5.5) in one well-studied area (US health surveys), on six new tasks. The rows
           are new, but the relationships are well documented.</li>
-        <li>It doesn't show whether the model can improve its own network from data. We only tried one quick round of
+        <li>It doesn't show whether the model can improve its own network from data. I only tried one quick round of
           feedback.</li>
       </ul>
     </div>
