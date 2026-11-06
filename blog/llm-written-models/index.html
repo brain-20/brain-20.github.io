@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>An LLM chose the weights before seeing any data</title>
-<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN up to 256 rows. A few labelled rows did not improve them.">
+<meta name="description" content="On health-survey data released after its training cutoff, Claude Opus 5.5 wrote models from column descriptions alone that match logistic regression trained on 3,500 rows and beat TabPFN until it has about 1,000 labelled rows. A few labelled rows did not improve them.">
 <link rel="stylesheet" href="../../assets/fonts.css">
 <link rel="stylesheet" href="../../assets/katex/katex.min.css">
 <style>
@@ -54,27 +54,56 @@
   table.allrows { margin-top: 28px; }
 
   .formula { font-size: clamp(12px, 1.6vw, 19px); margin: 6px 0 22px; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
-  .nn { margin: 0 0 22px; container-type: inline-size; }
-  .nn svg { display: block; width: 100%; height: auto; }
-  .nn-lin { stroke: var(--accent); stroke-width: 1.4; opacity: .55; }
-  .nn-hid { stroke: var(--ink2); stroke-width: 1.1; opacity: .45; }
-  .nn-in { fill: var(--bg); stroke: var(--ink2); stroke-width: 1.5; }
-  .nn-unit { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
-  .nn-out { fill: var(--tint); stroke: var(--ink); stroke-width: 1.8; }
-  .nn-box { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
-  .nn-t { font: 500 15px var(--sans); fill: var(--ink); }
-  .nn-blue { fill: var(--accent); }
-  .nn-r { font: 500 9.5px var(--sans); fill: var(--ink2); }
-  .nn-s { font: 13px var(--sans); fill: var(--ink2); }
-  .nn-e { font: italic 13px var(--serif); fill: var(--ink2); }
-  .nn-dots { font: 600 18px var(--sans); fill: var(--muted); }
-  .written { margin: 28px 0 8px; }
-  .written h3 { margin-bottom: 4px; }
-  .unit { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; padding: 16px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
-  .written h3 + .unit { border-top: 2px solid var(--ink); }
-  .unit .m { font-size: 18px; overflow-x: auto; overflow-y: hidden; }
-  .unit .why { font-style: italic; color: var(--ink2); font-size: 17px; line-height: 1.5; }
-  .unit .nm { display: block; font-family: var(--sans); font-style: normal; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card { border: 1px solid var(--rule); margin: 6px 0 10px; font-family: var(--sans); background: var(--bg); }
+  .card-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 11px 18px; border-bottom: 1px solid var(--rule); }
+  .card-top b { font-size: 15px; font-weight: 600; }
+  .card-top span { font-size: 13px; color: var(--muted); }
+  .card-body { display: grid; grid-template-columns: 260px minmax(0, 1fr); }
+  .card-left { padding: 18px 18px 14px; border-right: 1px solid var(--rule); }
+  .agechart { display: block; width: 100%; height: auto; }
+  .agechart .cg { stroke: var(--rule); stroke-width: 1; }
+  .agechart .c60 { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .agechart .ct { font: 11px var(--sans); fill: var(--muted); }
+  .agechart .cl { font: 600 12px var(--sans); }
+  .agechart .cf { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+  .agechart .cm { fill: none; stroke: var(--ink2); stroke-width: 2.2; stroke-linejoin: round; }
+  .agechart .cf-t { fill: var(--accent); } .agechart .cm-t { fill: var(--ink2); }
+  .card-cap { font-size: 13px; line-height: 1.45; color: var(--ink2); margin: 8px 0 0; }
+  .card-main { padding: 16px 18px 18px; min-width: 0; }
+  .prompt { border: 1px solid #d3d9e2; border-radius: 16px; padding: 12px 14px 10px; }
+  .pill { background: var(--tint); border-radius: 10px; padding: 8px 11px 7px; font-size: 13px; }
+  .pill .pl { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink); }
+  .pill svg { width: 14px; height: 14px; fill: none; stroke: var(--ink2); stroke-width: 1.2; flex: none; }
+  .pill code { display: block; margin-top: 3px; font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink2);
+    white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 75%, transparent); mask-image: linear-gradient(90deg, #000 75%, transparent); }
+  .prompt .ask { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 12px 0 4px; }
+  .prompt .rule { font-size: 14px; line-height: 1.5; color: var(--ink2); margin: 0 0 8px; }
+  .pfoot { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .pfoot details { min-width: 0; flex: 1; }
+  .send { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; flex: none; }
+  .send svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .card summary { color: var(--accent); font-size: 13.5px; font-weight: 500; cursor: pointer; list-style: none; }
+  .card summary::-webkit-details-marker { display: none; }
+  .card summary::after { content: " \25B8"; }
+  .card details[open] > summary::after { content: " \25BE"; }
+  .card summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  pre.code { max-height: 320px; overflow: auto; background: var(--tint); border-radius: 8px; padding: 10px 12px; margin: 8px 0 2px;
+    font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+  .answer { background: #edf4fc; margin: 14px -18px; padding: 10px 18px 11px; border-top: 1px solid #dbe6f3; border-bottom: 1px solid #dbe6f3; }
+  .answer p { margin: 0 0 6px; font-size: 14px; line-height: 1.5; }
+  .answer .lab { color: var(--accent); font-weight: 600; margin-right: 10px; }
+  .answer .res { font-weight: 600; color: var(--ink); }
+  .answer .meta { color: var(--ink2); font-size: 13px; }
+  .answer summary { display: inline-block; border: 1px solid #b9cde6; border-radius: 4px; padding: 1px 8px; background: var(--bg); font-weight: 600; }
+  .units-box { border: 1px solid #d3d9e2; border-radius: 12px; padding: 12px 10px 4px 14px; }
+  .units-box h4 { margin: 0 0 10px; font-size: 14px; color: var(--accent); font-weight: 600; }
+  ol.tl { list-style: none; margin: 0; padding: 0 8px 0 0; max-height: 330px; overflow-y: auto; }
+  ol.tl li { position: relative; padding: 0 0 12px 24px; }
+  ol.tl li::before { content: ""; position: absolute; left: 2px; top: 6px; width: 7px; height: 7px; border: 2px solid var(--accent); border-radius: 50%; background: var(--bg); z-index: 1; }
+  ol.tl li::after { content: ""; position: absolute; left: 7px; top: 16px; bottom: -4px; width: 1px; background: #c5d5ea; }
+  ol.tl li:last-child::after { display: none; }
+  ol.tl .m { font-size: 16px; overflow-x: auto; overflow-y: hidden; padding: 1px 0; }
+  ol.tl .why { margin: 1px 0 0; font: italic 15px/1.45 var(--serif); color: var(--ink2); }
 
   .nums { font-family: var(--sans); border-top: 2px solid var(--ink); margin: 0; }
   .nums div { display: grid; grid-template-columns: 92px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
@@ -112,18 +141,17 @@
     header { padding: 44px 0 24px; }
     h1 { font-size: 36px; }
     body { font-size: 17px; }
-    .unit { grid-template-columns: 1fr; gap: 6px; }
+    .card-body { grid-template-columns: minmax(0, 1fr); }
+    .card-left { border-right: 0; border-bottom: 1px solid var(--rule); }
+    .agechart { max-width: 340px; }
     .formula { font-size: 13.5px; }
-  }
-  @container (max-width: 480px) {
-    .nn-t { font-size: 18px; } .nn-s, .nn-e { font-size: 15.5px; } .nn-r { font-size: 10.5px; }
   }
   @media (max-width: 420px) {
     .formula { font-size: 12.5px; }
   }
   @media (max-width: 370px) {
     .formula { font-size: 11.8px; }
-    .unit .m { font-size: 16px; }
+    ol.tl .m { font-size: 15px; }
   }
 </style>
 </head>
@@ -138,12 +166,12 @@
       We asked Claude Opus 5.5 to write predictive models for health-survey tasks from the column descriptions alone,
       with no rows and no labels. On 2025 survey data released after its training cutoff, those models match logistic
       regression trained on 3,500 labelled rows. XGBoost and logistic regression never pass them, even with every row.
-      Only TabPFN does, once it has about 1,000 labelled rows. The knowledge is linear, though, and once written down,
+      Only TabPFN does, once it has about 1,000 labelled rows. The knowledge is mostly linear, though, and once written down,
       a few labelled rows did not improve it.
     </div>
     <dl class="qa">
       <div><dt>Can it write a useful model with no data?</dt>
-        <dd><strong>Yes.</strong> 0.805 AUC, the same as logistic regression on 3,500 rows.</dd></div>
+        <dd><strong>Yes.</strong> 0.805 AUC, a little above logistic regression on all 3,500 rows (0.800).</dd></div>
       <div><dt>Does that beat a tabular foundation model?</dt>
         <dd><strong>Yes, until about 1,000 rows.</strong> With all 3,500 rows TabPFN leads by 0.003. XGBoost and
           logistic regression never pass it.</dd></div>
@@ -171,7 +199,7 @@
           <dt>The post that prompted this</dt>
           <dd><a href="https://rikiyat.github.io/blog/weight-space-programming/">Sparks of Weight-Space Programming</a>,
             by Takehi, Teoh, Zhang and Khattab at MIT CSAIL, November 2026. A frontier model wrote game-playing networks
-            from the rules alone and beat PPO.</dd>
+            from the rules and source code alone and beat PPO.</dd>
           <dt>What we asked instead</dt>
           <dd>The same idea for prediction from tables, against gradient descent, XGBoost and TabPFN, on data the model
             cannot have seen.</dd>
@@ -186,7 +214,7 @@
     <div>
       <h2>Why the data has to be newer than the model</h2>
       <p>Results on LLMs and tables are hard to trust because the benchmarks are on the internet. In our pilot on the
-      <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite, Opus 5.5 could reproduce rows from 4 of the 16
+      <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> suite (since renamed TabLens), Opus 5.5 could reproduce rows from 4 of the 16
       datasets. So we built six tasks from surveys published after its training cutoff in June 2026, the CDC's
       <a href="https://www.cdc.gov/brfss/annual_data/annual_2025.html">BRFSS 2025</a> (released August 2026) and
       <a href="https://www.cdc.gov/nchs/nhis/">NHIS 2025</a> (released September 2026).</p>
@@ -206,7 +234,7 @@
         </tbody>
       </table>
       <p class="note">5,000 respondents per task, about 25 features each (age, sex, income, smoking, other
-      conditions). Loneliness is a question NHIS first asked in 2025.</p>
+      conditions). NHIS first asked about loneliness in 2024.</p>
     </div>
   </div>
 </section>
@@ -218,47 +246,14 @@
       <p>From the schema alone, it writes a small network in raw units, with a linear part and 16 hidden units, as
       JSON.</p>
       <div class="formula"><span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mop"><span class="mord mathrm">logit</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:2.4638em;vertical-align:-1.4138em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.05em;"><span style="top:-1.8723em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.4138em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:3.1032em;vertical-align:-1.3021em;"></span><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.8011em;"><span style="top:-1.8479em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">1</span></span></span></span><span style="top:-3.05em;"><span class="pstrut" style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class="pstrut" style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">16</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.3021em;"><span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mord"><span class="delimsizing size1">(</span></span><span class="mord"><span class="mord mathnormal">b</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.2858em;vertical-align:-0.4358em;"></span><span class="mop"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.162em;"><span style="top:-2.4003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4358em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0269em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">kj</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="mord mathnormal">x</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mord"><span class="delimsizing size1">)</span></span></span></span></span></span></div>
-      <figure class="nn" role="img" aria-label="Diagram of the network Opus 5.5 writes. Each input column, such as age, sex, BMI and diabetes, feeds a linear part and a few of 16 hidden ReLU units. Each hidden unit uses only a few inputs. The linear part and the hidden units add up, with an intercept, to the log-odds of the outcome.">
-        <svg viewBox="12 6 578 306" xmlns="http://www.w3.org/2000/svg">
-          <line x1="134" y1="62" x2="250" y2="36" class="nn-lin"/>
-          <line x1="134" y1="116" x2="250" y2="36" class="nn-lin"/>
-          <line x1="134" y1="170" x2="250" y2="36" class="nn-lin"/>
-          <line x1="134" y1="224" x2="250" y2="36" class="nn-lin"/>
-          <line x1="134" y1="62" x2="305" y2="104" class="nn-hid"/>
-          <line x1="134" y1="62" x2="305" y2="152" class="nn-hid"/>
-          <line x1="134" y1="116" x2="305" y2="152" class="nn-hid"/>
-          <line x1="134" y1="224" x2="305" y2="200" class="nn-hid"/>
-          <line x1="134" y1="62" x2="305" y2="200" class="nn-hid"/>
-          <line x1="134" y1="170" x2="305" y2="262" class="nn-hid"/>
-          <line x1="335" y1="104" x2="510" y2="166" class="nn-hid"/>
-          <line x1="335" y1="152" x2="510" y2="166" class="nn-hid"/>
-          <line x1="335" y1="200" x2="510" y2="166" class="nn-hid"/>
-          <line x1="335" y1="262" x2="510" y2="166" class="nn-hid"/>
-          <line x1="390" y1="36" x2="518" y2="146" class="nn-lin"/>
-          <circle cx="126" cy="62" r="8" class="nn-in"/><text x="108" y="67" text-anchor="end" class="nn-t">age</text>
-          <circle cx="126" cy="116" r="8" class="nn-in"/><text x="108" y="121" text-anchor="end" class="nn-t">sex = male</text>
-          <circle cx="126" cy="170" r="8" class="nn-in"/><text x="108" y="175" text-anchor="end" class="nn-t">BMI</text>
-          <circle cx="126" cy="224" r="8" class="nn-in"/><text x="108" y="229" text-anchor="end" class="nn-t">diabetes</text>
-          <text x="126" y="270" text-anchor="middle" class="nn-dots">⋮</text>
-          <text x="126" y="300" text-anchor="middle" class="nn-s">about 75 more</text>
-          <rect x="250" y="16" width="140" height="40" rx="8" class="nn-box"/><text x="320" y="41" text-anchor="middle" class="nn-t nn-blue">linear part, a·x</text>
-          <circle cx="320" cy="104" r="15" class="nn-unit"/><text x="320" y="108" text-anchor="middle" class="nn-r">ReLU</text>
-          <circle cx="320" cy="152" r="15" class="nn-unit"/><text x="320" y="156" text-anchor="middle" class="nn-r">ReLU</text>
-          <circle cx="320" cy="200" r="15" class="nn-unit"/><text x="320" y="204" text-anchor="middle" class="nn-r">ReLU</text>
-          <circle cx="320" cy="262" r="15" class="nn-unit"/><text x="320" y="266" text-anchor="middle" class="nn-r">ReLU</text>
-          <text x="320" y="236" text-anchor="middle" class="nn-dots">⋮</text>
-          <text x="320" y="300" text-anchor="middle" class="nn-s">16 hidden units, ReLU(b + w·x)</text>
-          <text x="320" y="78" text-anchor="middle" class="nn-e">e.g. ReLU(age − 65)</text>
-          <circle cx="540" cy="166" r="30" class="nn-out"/><text x="540" y="171" text-anchor="middle" class="nn-t">logit p</text>
-          <text x="540" y="216" text-anchor="middle" class="nn-s">+ intercept c</text>
-        </svg>
-      </figure>
-      <p>Each hidden unit uses only a few columns, so it can capture a threshold or an interaction, like risk rising faster
-      after 65. Opus 5.5 also writes a simpler thing, a prior. For each column it gives its best guess of the effect
+      <p>Each hidden unit takes only a few columns, so it can capture a threshold or an interaction, like risk rising more
+      slowly with age after 65. The intercept c is not written. It is fitted from the labelled rows, when there are any.</p>
+      <p>Opus 5.5 also writes a simpler thing, a prior. For each column it gives its best guess of the effect
       and how sure it is, and a logistic regression starts from those guesses and moves only as far as the data pushes
       it. We call these Opus 5.5's priors below.</p>
       <p>We average five such networks per task, then follow the usual few-shot protocol. We draw k labelled rows (4 to
-      256, five draws each), fit, and score AUC on 1,500 held-out rows.</p>
+      256, five draws each), fit, and score AUC on 1,500 held-out rows. One of the five networks for high blood pressure is
+      below, exactly as it came back.</p>
     </div>
     <div class="side">
       <div class="panel">
@@ -272,28 +267,254 @@
       </div>
     </div>
   </div>
-  <div class="written">
-    <h3>Three of the hidden units it wrote for high blood pressure</h3>
-    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">65</span><span class="mclose">)</span></span></span></span></div>
-      <div class="why">“Age-related rise in log-odds slows at older ages.”<span class="nm">age_over_65_flatten</span></div></div>
-    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.4</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">male</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">3</span><span class="mclose">)</span></span></span></span></div>
-      <div class="why">“Women's hypertension catches up to men's after menopause.”<span class="nm">female_older_catchup</span></div></div>
-    <div class="unit"><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.6</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.5</span><span class="mclose">)</span></span></span></span></div>
-      <div class="why">“Diabetes relative effect stronger in younger adults.”<span class="nm">diabetes_young</span></div></div>
-  </div>
+  <figure class="card" aria-label="One of the networks Opus 5.5 wrote for high blood pressure, with the prompt it was given">
+    <div class="card-top"><b>High blood pressure</b><span>BRFSS 2025 · one of the five networks Opus 5.5 wrote for this task, exactly as returned</span></div>
+    <div class="card-body">
+      <div class="card-left">
+        <svg viewBox="0 0 230 184" class="agechart" role="img" aria-label="Log-odds of high blood pressure by age, from this network. Both lines rise with age. Men sit 0.35 above women until 60, then women catch up and pass men at about 78."><line x1="34" x2="222" y1="146.0" y2="146.0" class="cg"/><text x="28" y="150.0" text-anchor="end" class="ct">0</text><line x1="34" x2="222" y1="104.8" y2="104.8" class="cg"/><text x="28" y="108.8" text-anchor="end" class="ct">1</text><line x1="34" x2="222" y1="63.5" y2="63.5" class="cg"/><text x="28" y="67.5" text-anchor="end" class="ct">2</text><line x1="34" x2="222" y1="22.2" y2="22.2" class="cg"/><text x="28" y="26.2" text-anchor="end" class="ct">3</text><text x="34.0" y="162" text-anchor="middle" class="ct">18</text><text x="100.7" y="162" text-anchor="middle" class="ct">40</text><text x="161.4" y="162" text-anchor="middle" class="ct">60</text><text x="222.0" y="162" text-anchor="middle" class="ct">80</text><line x1="161.4" x2="161.4" y1="14" y2="146" class="c60"/><path d="M34.0,131.6 L37.0,129.4 L40.1,127.2 L43.1,124.4 L46.1,121.7 L49.2,118.9 L52.2,116.1 L55.2,113.3 L58.3,110.5 L61.3,107.7 L64.3,105.0 L67.4,102.2 L70.4,99.4 L73.4,97.8 L76.5,96.3 L79.5,94.7 L82.5,93.2 L85.5,91.7 L88.6,90.1 L91.6,88.6 L94.6,87.0 L97.7,85.5 L100.7,83.9 L103.7,82.4 L106.8,80.8 L109.8,79.3 L112.8,77.7 L115.9,76.2 L118.9,74.6 L121.9,73.1 L125.0,71.5 L128.0,70.0 L131.0,68.5 L134.1,66.9 L137.1,65.4 L140.1,63.8 L143.2,62.3 L146.2,60.5 L149.2,58.4 L152.3,56.3 L155.3,54.3 L158.3,52.2 L161.4,50.2 L164.4,48.1 L167.4,46.0 L170.5,44.0 L173.5,41.9 L176.5,39.8 L179.5,38.6 L182.6,37.4 L185.6,36.1 L188.6,34.9 L191.7,33.7 L194.7,32.4 L197.7,31.2 L200.8,29.9 L203.8,28.7 L206.8,27.5 L209.9,26.2 L212.9,25.0 L215.9,23.8 L219.0,22.5 L222.0,21.3" class="cm"/><path d="M34.0,146.0 L37.0,143.8 L40.1,141.7 L43.1,138.9 L46.1,136.1 L49.2,133.3 L52.2,130.5 L55.2,127.7 L58.3,125.0 L61.3,122.2 L64.3,119.4 L67.4,116.6 L70.4,113.8 L73.4,112.3 L76.5,110.7 L79.5,109.2 L82.5,107.6 L85.5,106.1 L88.6,104.5 L91.6,103.0 L94.6,101.4 L97.7,99.9 L100.7,98.4 L103.7,96.8 L106.8,95.3 L109.8,93.7 L112.8,92.2 L115.9,90.6 L118.9,89.1 L121.9,87.5 L125.0,86.0 L128.0,84.4 L131.0,82.9 L134.1,81.3 L137.1,79.8 L140.1,78.2 L143.2,76.7 L146.2,74.9 L149.2,72.8 L152.3,70.8 L155.3,68.7 L158.3,66.7 L161.4,64.6 L164.4,61.7 L167.4,58.8 L170.5,55.9 L173.5,53.0 L176.5,50.2 L179.5,48.1 L182.6,46.0 L185.6,44.0 L188.6,41.9 L191.7,39.8 L194.7,37.8 L197.7,35.7 L200.8,33.7 L203.8,31.6 L206.8,29.5 L209.9,27.5 L212.9,25.4 L215.9,23.3 L219.0,21.3 L222.0,19.2" class="cf"/><text x="70.4" y="85.4" text-anchor="middle" class="cl cm-t">men</text><text x="131.0" y="106.9" text-anchor="middle" class="cl cf-t">women</text><text x="128" y="179" text-anchor="middle" class="ct">age</text></svg>
+        <p class="card-cap">What these weights say about age, for a woman and a man with median BMI and every other column at
+        its reference level. Log-odds relative to a woman of 18. Women catch up after 60 and pass men at about 78.</p>
+      </div>
+      <div class="card-main">
+        <div class="prompt">
+          <div class="pill"><span class="pl"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5.5L12.5 4.5V14.5H4z M9.5 1.5V4.5H12.5 M6 8h4.5 M6 10.5h4.5" /></svg>the survey's schema, 75 columns with their statistics</span>
+            <code>age_years: numeric, min 18, median 59, max 80, mean 55.9, sd 18.33, 63 distinct values</code></div>
+          <p class="ask">Write your network for this dataset: a linear part and exactly 16 units.</p>
+          <p class="rule">y = 1 if the respondent was ever told by a health professional that they have high blood pressure.
+          You will never see any rows or labels.</p>
+          <div class="pfoot"><details><summary>Show the full prompt</summary><pre class="code">You are an expert statistician with deep knowledge of the domain each dataset comes from.
+You will be shown the schema of a tabular dataset with a binary target. You will never see any rows or labels.
+Write down what you already know as a small neural network that predicts y on its own:
+    logit = c + sum_j a_j * x_j + sum_k out_k * relu(bias_k + sum_j w_kj * x_j)
+with x in RAW units (per year, per point, or 0/1 for an indicator) and c fitted later from data (do not write c).
+
+The network has a linear part and exactly 16 hidden units.
+- &quot;linear&quot;: the plain linear effects a_j, per one raw unit, holding the other columns fixed. Check each against the
+  column&#x27;s sd: a_j times sd is the effect of a one-sd change, usually below 1 in absolute value and rarely above 2.
+  Several columns can measure the same thing; then share the effect between them rather than repeating it.
+- &quot;units&quot;: exactly 16 ReLU units, each for a non-linear effect you believe is real: a threshold or hinge (an effect
+  that starts or speeds up past a value), saturation, or an interaction (an effect of one column that depends on
+  another). A hinge above t on column x has weight 1 on x and bias -t (weight -1 and bias t for below t); its out is
+  then the change in slope per raw unit past t. An effect that applies only when two indicators are both 1 has
+  weight 1 on each and bias -1; its out is the extra log-odds. Use 1 to 6 inputs per unit. Do not copy linear
+  effects into units. Order the units from most to least important. When you run out of strong structure, give the
+  weaker effects you still believe in, with a small out, rather than inventing strong ones.
+
+Think it through first. Be calibrated. Do not invent precision. Keep every &quot;why&quot; under 15 words.
+Reply with the JSON object only.
+
+---
+
+Dataset: u_brfss_hypertension
+Rows: 5000
+Binary target: &#x27;target&#x27;. y = 1 means target == &#x27;1&#x27;.
+
+Dataset description (from its source):
+y = 1 if the respondent was ever told by a health professional that they have high blood pressure (pregnancy-only and borderline answers excluded); y = 0 otherwise.
+
+Behavioral Risk Factor Surveillance System (BRFSS) 2025: CDC&#x27;s telephone survey of US adults about health-related risk behaviours, chronic conditions and use of preventive services. Each row is one adult respondent. Answers of don&#x27;t know or refused are missing.
+
+Encoded columns (these are the model inputs, in raw units):
+- age_years: numeric, min 18, median 59, max 80, mean 55.9, sd 18.33, 63 distinct values
+- sex=Male: indicator, 1 if sex is &#x27;Male&#x27;, else 0 (reference level &#x27;Female&#x27;; 48% of rows are 1)
+- race_ethnicity=Hispanic: indicator, 1 if race_ethnicity is &#x27;Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 10% of rows are 1)
+- race_ethnicity=Black, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;Black, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 7% of rows are 1)
+- race_ethnicity=Asian, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;Asian, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 3% of rows are 1)
+- race_ethnicity=Multiracial, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;Multiracial, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 3% of rows are 1)
+- race_ethnicity=missing: indicator, 1 if race_ethnicity is &#x27;missing&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 2% of rows are 1)
+- race_ethnicity=American Indian or Alaskan Native, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;American Indian or Alaskan Native, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 2% of rows are 1)
+- race_ethnicity=Native Hawaiian or other Pacific Islander, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;Native Hawaiian or other Pacific Islander, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 1% of rows are 1)
+- race_ethnicity=Other race, non-Hispanic: indicator, 1 if race_ethnicity is &#x27;Other race, non-Hispanic&#x27;, else 0 (reference level &#x27;White, non-Hispanic&#x27;; 1% of rows are 1)
+- education=Graduated high school: indicator, 1 if education is &#x27;Graduated high school&#x27;, else 0 (reference level &#x27;Graduated from college or technical school&#x27;; 27% of rows are 1)
+- education=Attended college or technical school: indicator, 1 if education is &#x27;Attended college or technical school&#x27;, else 0 (reference level &#x27;Graduated from college or technical school&#x27;; 26% of rows are 1)
+- education=Did not graduate high school: indicator, 1 if education is &#x27;Did not graduate high school&#x27;, else 0 (reference level &#x27;Graduated from college or technical school&#x27;; 6% of rows are 1)
+- education=missing: indicator, 1 if education is &#x27;missing&#x27;, else 0 (reference level &#x27;Graduated from college or technical school&#x27;; 1% of rows are 1)
+- household_income=missing: indicator, 1 if household_income is &#x27;missing&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 19% of rows are 1)
+- household_income=$100,000 to less than $200,000: indicator, 1 if household_income is &#x27;$100,000 to less than $200,000&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 18% of rows are 1)
+- household_income=$35,000 to less than $50,000: indicator, 1 if household_income is &#x27;$35,000 to less than $50,000&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 10% of rows are 1)
+- household_income=$25,000 to less than $35,000: indicator, 1 if household_income is &#x27;$25,000 to less than $35,000&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 9% of rows are 1)
+- household_income=$15,000 to less than $25,000: indicator, 1 if household_income is &#x27;$15,000 to less than $25,000&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 8% of rows are 1)
+- household_income=$200,000 or more: indicator, 1 if household_income is &#x27;$200,000 or more&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 7% of rows are 1)
+- household_income=Less than $15,000: indicator, 1 if household_income is &#x27;Less than $15,000&#x27;, else 0 (reference level &#x27;$50,000 to less than $100,000&#x27;; 4% of rows are 1)
+- marital_status=Never married: indicator, 1 if marital_status is &#x27;Never married&#x27;, else 0 (reference level &#x27;Married&#x27;; 19% of rows are 1)
+- marital_status=Divorced: indicator, 1 if marital_status is &#x27;Divorced&#x27;, else 0 (reference level &#x27;Married&#x27;; 12% of rows are 1)
+- marital_status=Widowed: indicator, 1 if marital_status is &#x27;Widowed&#x27;, else 0 (reference level &#x27;Married&#x27;; 11% of rows are 1)
+- marital_status=Member of an unmarried couple: indicator, 1 if marital_status is &#x27;Member of an unmarried couple&#x27;, else 0 (reference level &#x27;Married&#x27;; 5% of rows are 1)
+- marital_status=Separated: indicator, 1 if marital_status is &#x27;Separated&#x27;, else 0 (reference level &#x27;Married&#x27;; 2% of rows are 1)
+- marital_status=missing: indicator, 1 if marital_status is &#x27;missing&#x27;, else 0 (reference level &#x27;Married&#x27;; 1% of rows are 1)
+- employment=Retired: indicator, 1 if employment is &#x27;Retired&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 34% of rows are 1)
+- employment=Self-employed: indicator, 1 if employment is &#x27;Self-employed&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 9% of rows are 1)
+- employment=Unable to work: indicator, 1 if employment is &#x27;Unable to work&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 6% of rows are 1)
+- employment=Homemaker: indicator, 1 if employment is &#x27;Homemaker&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 4% of rows are 1)
+- employment=Student: indicator, 1 if employment is &#x27;Student&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 3% of rows are 1)
+- employment=Out of work for less than 1 year: indicator, 1 if employment is &#x27;Out of work for less than 1 year&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 3% of rows are 1)
+- employment=missing: indicator, 1 if employment is &#x27;missing&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 2% of rows are 1)
+- employment=Out of work for 1 year or more: indicator, 1 if employment is &#x27;Out of work for 1 year or more&#x27;, else 0 (reference level &#x27;Employed for wages&#x27;; 2% of rows are 1)
+- bmi: numeric, min 12.41, median 27.26, max 91.85, mean 28.4, sd 6.659, 1152 distinct values
+- smoking_status=Former smoker: indicator, 1 if smoking_status is &#x27;Former smoker&#x27;, else 0 (reference level &#x27;Never smoked&#x27;; 27% of rows are 1)
+- smoking_status=Current smoker, every day: indicator, 1 if smoking_status is &#x27;Current smoker, every day&#x27;, else 0 (reference level &#x27;Never smoked&#x27;; 7% of rows are 1)
+- smoking_status=missing: indicator, 1 if smoking_status is &#x27;missing&#x27;, else 0 (reference level &#x27;Never smoked&#x27;; 5% of rows are 1)
+- smoking_status=Current smoker, some days: indicator, 1 if smoking_status is &#x27;Current smoker, some days&#x27;, else 0 (reference level &#x27;Never smoked&#x27;; 3% of rows are 1)
+- leisure_time_physical_activity_past_30_days=No: indicator, 1 if leisure_time_physical_activity_past_30_days is &#x27;No&#x27;, else 0 (reference level &#x27;Yes&#x27;; 23% of rows are 1)
+- leisure_time_physical_activity_past_30_days=missing: indicator, 1 if leisure_time_physical_activity_past_30_days is &#x27;missing&#x27;, else 0 (reference level &#x27;Yes&#x27;; 0% of rows are 1)
+- general_health=Very good: indicator, 1 if general_health is &#x27;Very good&#x27;, else 0 (reference level &#x27;Good&#x27;; 33% of rows are 1)
+- general_health=Fair: indicator, 1 if general_health is &#x27;Fair&#x27;, else 0 (reference level &#x27;Good&#x27;; 15% of rows are 1)
+- general_health=Excellent: indicator, 1 if general_health is &#x27;Excellent&#x27;, else 0 (reference level &#x27;Good&#x27;; 13% of rows are 1)
+- general_health=Poor: indicator, 1 if general_health is &#x27;Poor&#x27;, else 0 (reference level &#x27;Good&#x27;; 5% of rows are 1)
+- general_health=missing: indicator, 1 if general_health is &#x27;missing&#x27;, else 0 (reference level &#x27;Good&#x27;; 0% of rows are 1)
+- days_physical_health_not_good_past_30: numeric, min 0, median 0, max 30, mean 4.7, sd 9.048, 29 distinct values
+- days_mental_health_not_good_past_30: numeric, min 0, median 0, max 30, mean 4.579, sd 8.532, 29 distinct values
+- has_health_insurance=No: indicator, 1 if has_health_insurance is &#x27;No&#x27;, else 0 (reference level &#x27;Yes&#x27;; 5% of rows are 1)
+- has_health_insurance=missing: indicator, 1 if has_health_insurance is &#x27;missing&#x27;, else 0 (reference level &#x27;Yes&#x27;; 4% of rows are 1)
+- could_not_afford_to_see_doctor_past_year=Yes: indicator, 1 if could_not_afford_to_see_doctor_past_year is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 9% of rows are 1)
+- could_not_afford_to_see_doctor_past_year=missing: indicator, 1 if could_not_afford_to_see_doctor_past_year is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 0% of rows are 1)
+- serious_difficulty_walking_or_climbing_stairs=Yes: indicator, 1 if serious_difficulty_walking_or_climbing_stairs is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 16% of rows are 1)
+- serious_difficulty_walking_or_climbing_stairs=missing: indicator, 1 if serious_difficulty_walking_or_climbing_stairs is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 4% of rows are 1)
+- ever_told_high_cholesterol=Yes: indicator, 1 if ever_told_high_cholesterol is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 39% of rows are 1)
+- ever_told_high_cholesterol=missing: indicator, 1 if ever_told_high_cholesterol is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 11% of rows are 1)
+- ever_told_diabetes=Yes: indicator, 1 if ever_told_diabetes is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 14% of rows are 1)
+- ever_told_diabetes=Pre-diabetes or borderline diabetes: indicator, 1 if ever_told_diabetes is &#x27;Pre-diabetes or borderline diabetes&#x27;, else 0 (reference level &#x27;No&#x27;; 3% of rows are 1)
+- ever_told_diabetes=Yes, only during pregnancy: indicator, 1 if ever_told_diabetes is &#x27;Yes, only during pregnancy&#x27;, else 0 (reference level &#x27;No&#x27;; 1% of rows are 1)
+- ever_told_diabetes=missing: indicator, 1 if ever_told_diabetes is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 0% of rows are 1)
+- ever_heart_attack_or_coronary_heart_disease=Yes: indicator, 1 if ever_heart_attack_or_coronary_heart_disease is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 8% of rows are 1)
+- ever_heart_attack_or_coronary_heart_disease=missing: indicator, 1 if ever_heart_attack_or_coronary_heart_disease is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 1% of rows are 1)
+- ever_told_stroke=Yes: indicator, 1 if ever_told_stroke is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 5% of rows are 1)
+- ever_told_stroke=missing: indicator, 1 if ever_told_stroke is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 0% of rows are 1)
+- ever_told_asthma=Yes: indicator, 1 if ever_told_asthma is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 16% of rows are 1)
+- ever_told_asthma=missing: indicator, 1 if ever_told_asthma is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 0% of rows are 1)
+- ever_told_copd_emphysema_or_chronic_bronchitis=Yes: indicator, 1 if ever_told_copd_emphysema_or_chronic_bronchitis is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 8% of rows are 1)
+- ever_told_copd_emphysema_or_chronic_bronchitis=missing: indicator, 1 if ever_told_copd_emphysema_or_chronic_bronchitis is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 0% of rows are 1)
+- ever_told_depressive_disorder=Yes: indicator, 1 if ever_told_depressive_disorder is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 21% of rows are 1)
+- ever_told_depressive_disorder=missing: indicator, 1 if ever_told_depressive_disorder is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 1% of rows are 1)
+- ever_told_kidney_disease=Yes: indicator, 1 if ever_told_kidney_disease is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 6% of rows are 1)
+- ever_told_kidney_disease=missing: indicator, 1 if ever_told_kidney_disease is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 1% of rows are 1)
+- ever_told_arthritis=Yes: indicator, 1 if ever_told_arthritis is &#x27;Yes&#x27;, else 0 (reference level &#x27;No&#x27;; 35% of rows are 1)
+- ever_told_arthritis=missing: indicator, 1 if ever_told_arthritis is &#x27;missing&#x27;, else 0 (reference level &#x27;No&#x27;; 1% of rows are 1)
+
+Write your network for this dataset: a linear part and exactly 16 units, with the exact encoded column names listed above.</pre></details>
+            <span class="send" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 12.5V3.5 M4 7.5L8 3.5L12 7.5"/></svg></span></div>
+        </div>
+        <div class="answer">
+          <p><span class="lab">Answer</span><span class="res">40 linear weights and 16 hidden units</span>
+          <span class="meta">· 5,612 output tokens, 3,126 of them thinking</span></p>
+          <details><summary>The weights Opus 5.5 wrote · 78 lines</summary><pre class="code">{&quot;network&quot;: {
+  &quot;linear&quot;: [
+    {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: 0.05},
+    {&quot;column&quot;: &quot;sex=Male&quot;, &quot;w&quot;: 0.35},
+    {&quot;column&quot;: &quot;race_ethnicity=Black, non-Hispanic&quot;, &quot;w&quot;: 0.45},
+    {&quot;column&quot;: &quot;race_ethnicity=Hispanic&quot;, &quot;w&quot;: -0.15},
+    {&quot;column&quot;: &quot;race_ethnicity=Asian, non-Hispanic&quot;, &quot;w&quot;: 0.05},
+    {&quot;column&quot;: &quot;race_ethnicity=American Indian or Alaskan Native, non-Hispanic&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;race_ethnicity=Native Hawaiian or other Pacific Islander, non-Hispanic&quot;, &quot;w&quot;: 0.15},
+    {&quot;column&quot;: &quot;education=Graduated high school&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;education=Attended college or technical school&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;education=Did not graduate high school&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;household_income=Less than $15,000&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;household_income=$15,000 to less than $25,000&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;household_income=$200,000 or more&quot;, &quot;w&quot;: -0.15},
+    {&quot;column&quot;: &quot;household_income=$100,000 to less than $200,000&quot;, &quot;w&quot;: -0.05},
+    {&quot;column&quot;: &quot;marital_status=Never married&quot;, &quot;w&quot;: -0.05},
+    {&quot;column&quot;: &quot;marital_status=Widowed&quot;, &quot;w&quot;: 0.05},
+    {&quot;column&quot;: &quot;employment=Retired&quot;, &quot;w&quot;: 0.15},
+    {&quot;column&quot;: &quot;employment=Unable to work&quot;, &quot;w&quot;: 0.2},
+    {&quot;column&quot;: &quot;employment=Student&quot;, &quot;w&quot;: -0.2},
+    {&quot;column&quot;: &quot;bmi&quot;, &quot;w&quot;: 0.075},
+    {&quot;column&quot;: &quot;smoking_status=Former smoker&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;leisure_time_physical_activity_past_30_days=No&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;general_health=Excellent&quot;, &quot;w&quot;: -0.4},
+    {&quot;column&quot;: &quot;general_health=Very good&quot;, &quot;w&quot;: -0.2},
+    {&quot;column&quot;: &quot;general_health=Fair&quot;, &quot;w&quot;: 0.25},
+    {&quot;column&quot;: &quot;general_health=Poor&quot;, &quot;w&quot;: 0.35},
+    {&quot;column&quot;: &quot;has_health_insurance=No&quot;, &quot;w&quot;: -0.3},
+    {&quot;column&quot;: &quot;serious_difficulty_walking_or_climbing_stairs=Yes&quot;, &quot;w&quot;: 0.15},
+    {&quot;column&quot;: &quot;ever_told_high_cholesterol=Yes&quot;, &quot;w&quot;: 0.75},
+    {&quot;column&quot;: &quot;ever_told_high_cholesterol=missing&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;ever_told_diabetes=Yes&quot;, &quot;w&quot;: 0.75},
+    {&quot;column&quot;: &quot;ever_told_diabetes=Pre-diabetes or borderline diabetes&quot;, &quot;w&quot;: 0.4},
+    {&quot;column&quot;: &quot;ever_told_diabetes=Yes, only during pregnancy&quot;, &quot;w&quot;: 0.2},
+    {&quot;column&quot;: &quot;ever_heart_attack_or_coronary_heart_disease=Yes&quot;, &quot;w&quot;: 0.6},
+    {&quot;column&quot;: &quot;ever_told_stroke=Yes&quot;, &quot;w&quot;: 0.5},
+    {&quot;column&quot;: &quot;ever_told_kidney_disease=Yes&quot;, &quot;w&quot;: 0.6},
+    {&quot;column&quot;: &quot;ever_told_arthritis=Yes&quot;, &quot;w&quot;: 0.2},
+    {&quot;column&quot;: &quot;ever_told_depressive_disorder=Yes&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;ever_told_copd_emphysema_or_chronic_bronchitis=Yes&quot;, &quot;w&quot;: 0.1},
+    {&quot;column&quot;: &quot;days_physical_health_not_good_past_30&quot;, &quot;w&quot;: 0.003}
+  ],
+  &quot;units&quot;: [
+    {&quot;name&quot;: &quot;age_over_65_flatten&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: 1}], &quot;bias&quot;: -65, &quot;out&quot;: -0.02,
+     &quot;why&quot;: &quot;Age-related rise in log-odds slows at older ages.&quot;},
+    {&quot;name&quot;: &quot;female_older_catchup&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;sex=Male&quot;, &quot;w&quot;: -2}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: 0.05}], &quot;bias&quot;: -3, &quot;out&quot;: 0.4,
+     &quot;why&quot;: &quot;Women&#x27;s hypertension catches up to men&#x27;s after menopause.&quot;},
+    {&quot;name&quot;: &quot;diabetes_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;ever_told_diabetes=Yes&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.025}], &quot;bias&quot;: 0.5, &quot;out&quot;: 0.6,
+     &quot;why&quot;: &quot;Diabetes relative effect stronger in younger adults.&quot;},
+    {&quot;name&quot;: &quot;cholesterol_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;ever_told_high_cholesterol=Yes&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.025}], &quot;bias&quot;: 0.125, &quot;out&quot;: 0.4,
+     &quot;why&quot;: &quot;High cholesterol in young signals metabolic syndrome, screening.&quot;},
+    {&quot;name&quot;: &quot;bmi_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;bmi&quot;, &quot;w&quot;: 0.1}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.05}], &quot;bias&quot;: 0, &quot;out&quot;: 0.25,
+     &quot;why&quot;: &quot;Obesity effect on BP stronger at younger ages.&quot;},
+    {&quot;name&quot;: &quot;bmi_over_40_saturate&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;bmi&quot;, &quot;w&quot;: 1}], &quot;bias&quot;: -40, &quot;out&quot;: -0.04,
+     &quot;why&quot;: &quot;BMI effect saturates at extreme obesity.&quot;},
+    {&quot;name&quot;: &quot;chol_and_diabetes&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;ever_told_high_cholesterol=Yes&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;ever_told_diabetes=Yes&quot;, &quot;w&quot;: 1}], &quot;bias&quot;: -1, &quot;out&quot;: -0.3,
+     &quot;why&quot;: &quot;Overlapping cardiometabolic risk is subadditive.&quot;},
+    {&quot;name&quot;: &quot;heart_and_stroke&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;ever_heart_attack_or_coronary_heart_disease=Yes&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;ever_told_stroke=Yes&quot;, &quot;w&quot;: 1}], &quot;bias&quot;: -1, &quot;out&quot;: -0.3,
+     &quot;why&quot;: &quot;Both CVD events share hypertension signal; subadditive.&quot;},
+    {&quot;name&quot;: &quot;fairpoor_health_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;general_health=Fair&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;general_health=Poor&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.025}], &quot;bias&quot;: 0.125, &quot;out&quot;: 0.3,
+     &quot;why&quot;: &quot;Poor health in young more informative of chronic disease.&quot;},
+    {&quot;name&quot;: &quot;black_older&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;race_ethnicity=Black, non-Hispanic&quot;, &quot;w&quot;: 2}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: 0.025}], &quot;bias&quot;: -2.75, &quot;out&quot;: 0.25,
+     &quot;why&quot;: &quot;Black-white hypertension gap widens with age.&quot;},
+    {&quot;name&quot;: &quot;kidney_and_diabetes&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;ever_told_kidney_disease=Yes&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;ever_told_diabetes=Yes&quot;, &quot;w&quot;: 1}], &quot;bias&quot;: -1, &quot;out&quot;: -0.2,
+     &quot;why&quot;: &quot;Diabetic kidney disease overlaps diabetes signal.&quot;},
+    {&quot;name&quot;: &quot;retired_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;employment=Retired&quot;, &quot;w&quot;: 3}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.05}], &quot;bias&quot;: -0.25, &quot;out&quot;: 0.25,
+     &quot;why&quot;: &quot;Early retirement often reflects poor health.&quot;},
+    {&quot;name&quot;: &quot;unable_work_young&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;employment=Unable to work&quot;, &quot;w&quot;: 3}, {&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -0.05}], &quot;bias&quot;: -0.5, &quot;out&quot;: 0.25,
+     &quot;why&quot;: &quot;Disability at young age signals chronic disease.&quot;},
+    {&quot;name&quot;: &quot;age_under_30_steeper&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;age_years&quot;, &quot;w&quot;: -1}], &quot;bias&quot;: 30, &quot;out&quot;: -0.03,
+     &quot;why&quot;: &quot;Prevalence very low in youngest adults.&quot;},
+    {&quot;name&quot;: &quot;diabetic_high_bmi&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;bmi&quot;, &quot;w&quot;: 1}, {&quot;column&quot;: &quot;ever_told_diabetes=Yes&quot;, &quot;w&quot;: 60}], &quot;bias&quot;: -95, &quot;out&quot;: -0.02,
+     &quot;why&quot;: &quot;Among diabetics extra BMI adds less.&quot;},
+    {&quot;name&quot;: &quot;underweight_flatten&quot;, &quot;weights&quot;: [{&quot;column&quot;: &quot;bmi&quot;, &quot;w&quot;: -1}], &quot;bias&quot;: 20, &quot;out&quot;: 0.03,
+     &quot;why&quot;: &quot;Low BMI often frail elderly; decline flattens.&quot;}
+  ]
+}}</pre></details>
+        </div>
+        <div class="units-box">
+          <h4>Its 16 hidden units, most important first</h4>
+          <ol class="tl">
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">65</span><span class="mclose">)</span></span></span></span></div><p class="why">“Age-related rise in log-odds slows at older ages.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.4</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">male</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">3</span><span class="mclose">)</span></span></span></span></div><p class="why">“Women&#x27;s hypertension catches up to men&#x27;s after menopause.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.6</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.5</span><span class="mclose">)</span></span></span></span></div><p class="why">“Diabetes relative effect stronger in younger adults.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.4</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">high cholesterol</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.125</span><span class="mclose">)</span></span></span></span></div><p class="why">“High cholesterol in young signals metabolic syndrome, screening.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.25</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">0.1</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">BMI</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mclose">)</span></span></span></span></div><p class="why">“Obesity effect on BP stronger at younger ages.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.04</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">BMI</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">40</span><span class="mclose">)</span></span></span></span></div><p class="why">“BMI effect saturates at extreme obesity.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.3</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">high cholesterol</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span></div><p class="why">“Overlapping cardiometabolic risk is subadditive.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.3</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">heart disease</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord text"><span class="mord">stroke</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span></div><p class="why">“Both CVD events share hypertension signal; subadditive.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.3</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">fair health</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">poor health</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.125</span><span class="mclose">)</span></span></span></span></div><p class="why">“Poor health in young more informative of chronic disease.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.25</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">Black</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.025</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">2.75</span><span class="mclose">)</span></span></span></span></div><p class="why">“Black-white hypertension gap widens with age.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.2</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">kidney disease</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1</span><span class="mclose">)</span></span></span></span></div><p class="why">“Diabetic kidney disease overlaps diabetes signal.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.25</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">3</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">retired</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.25</span><span class="mclose">)</span></span></span></span></div><p class="why">“Early retirement often reflects poor health.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.25</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">3</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">unable to work</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0.05</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">0.5</span><span class="mclose">)</span></span></span></span></div><p class="why">“Disability at young age signals chronic disease.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.03</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">30</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">age</span></span><span class="mclose">)</span></span></span></span></div><p class="why">“Prevalence very low in youngest adults.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">0.02</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord text"><span class="mord">BMI</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord">60</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord text"><span class="mord">diabetes</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">95</span><span class="mclose">)</span></span></span></span></div><p class="why">“Among diabetics extra BMI adds less.”</p></li>
+          <li><div class="m"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0.03</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathrm">ReLU</span></span><span class="mopen">(</span><span class="mord">20</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">BMI</span></span><span class="mclose">)</span></span></span></span></div><p class="why">“Low BMI often frail elderly; decline flattens.”</p></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </figure>
+  <p class="note">28 of the 30 networks (five per task) came back with all 16 hidden units. Two had only the linear part
+  and were scored as returned.</p>
 </section>
 
 <section>
   <h2>It starts where the data ends</h2>
   <figure>
     <a href="fig1_auc_vs_rows.png"><img src="fig1_auc_vs_rows.png" alt="Line chart of ROC-AUC against labelled training rows, from 0 to all 3,500. Opus 5.5's written network stays near 0.80 throughout. TabPFN rises from 0.60 at 4 rows to 0.78 at 256 and passes the written network at about 1,000 rows, ending at 0.811. Logistic regression reaches 0.80 only with all 3,500 rows. XGBoost ends at 0.77."></a>
-    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes beyond the pre-registered range, with two
-    draws per point, and was added to see where the data catches up.</figcaption>
+    <figcaption>Mean AUC over the six 2025 tasks. The shaded part goes beyond the pre-registered range and was added
+    to see where the data catches up. It has two draws per point, and one fit on all rows at 3,500.</figcaption>
   </figure>
   <div class="row">
     <div>
       <p class="lede">With zero rows the written network scores 0.805. TabPFN needs about 1,000 labelled rows to match
-      it, and logistic regression needs all 3,500.</p>
+      it, and logistic regression comes within 0.005 only with all 3,500.</p>
       <p>Even with every row, XGBoost (0.767) and logistic regression (0.800) stay below it. Only TabPFN pulls ahead,
       and only in the large-data regime, reaching 0.811 with all 3,500 rows against 0.808 for the written network
       trained on the same rows.</p>
@@ -304,7 +525,7 @@
     <dl class="nums">
       <div><dt>0.805</dt><dd>Opus 5.5's network, no labelled rows</dd></div>
       <div><dt>~1,000</dt><dd>Rows TabPFN needs to catch up</dd></div>
-      <div><dt>3,500</dt><dd>Rows logistic regression needs to catch up</dd></div>
+      <div><dt>3,500</dt><dd>Rows logistic regression needs to come within 0.005</dd></div>
       <div><dt>17/17</dt><dd>Tasks where Opus 5.5's priors beat TabPFN at 4 to 16 rows</dd></div>
     </dl>
     <table class="tasks allrows">
@@ -327,13 +548,13 @@
     <div class="col">
       <h3>Take the knowledge away</h3>
       <div class="item"><div class="lab">Move the written weights onto shuffled columns</div><div class="vals">0.805 → 0.565</div><div class="d">−0.240</div><div class="track"><span class="neg" style="width:96.0%"></span></div></div>
-      <div class="item"><div class="lab">Hide the column names while it writes</div><div class="vals">0.802 → 0.615</div><div class="d">−0.187</div><div class="track"><span class="neg" style="width:74.8%"></span></div></div>
+      <div class="item"><div class="lab">Hide the column names while it writes<span class="sub">its priors, no rows</span></div><div class="vals">0.802 → 0.615</div><div class="d">−0.187</div><div class="track"><span class="neg" style="width:74.8%"></span></div></div>
       <div class="item"><div class="lab">Same network, started from random weights<span class="sub">with 4 to 32 rows</span></div><div class="vals">0.800 → 0.617</div><div class="d">−0.183</div><div class="track"><span class="neg" style="width:73.2%"></span></div></div>
     </div>
     <div class="col">
       <h3>Add something on top</h3>
       <div class="item"><div class="lab">Hidden units instead of straight lines</div><div class="vals">0.802 → 0.805</div><div class="d">+0.003</div><div class="track"><span class="pos" style="width:1.2%"></span></div></div>
-      <div class="item"><div class="lab">A round of editing it with the rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.804</div><div class="d">+0.000</div><div class="track"><span class="pos" style="width:0.8%"></span></div></div>
+      <div class="item"><div class="lab">A round of editing it with the rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.804</div><div class="d">+0.000</div><div class="track"><span class="pos" style="width:0.16%"></span></div></div>
       <div class="item"><div class="lab">Gradient descent on the same rows<span class="sub">with 16 or 64 rows</span></div><div class="vals">0.804 → 0.798</div><div class="d">−0.005</div><div class="track"><span class="neg" style="width:2.0%"></span></div></div>
       <div class="item"><div class="lab">Scoring each row directly instead<span class="sub">on 300 test rows</span></div><div class="vals">0.807 → 0.802</div><div class="d">−0.004</div><div class="track"><span class="neg" style="width:1.6%"></span></div></div>
     </div>
@@ -347,7 +568,7 @@
     </div>
     <div>
       <p>The hidden units read like an epidemiologist's notes, yet together they add 0.003. Writing the model and
-      scoring rows directly land at the same accuracy, but writing takes one call per task instead of one per row,
+      scoring rows directly land at about the same accuracy, but writing takes one call per task instead of one per row,
       and you can read the result.</p>
     </div>
   </div>
@@ -360,13 +581,13 @@
       <p>Closer to the MIT setup, we also gave Opus 5.5 a feedback loop to revise its own network.</p>
       <p class="lede">After the first draft, nothing improved it.</p>
       <p>A round of edits left the network where it was (+0.0004), and edits that saw the rows did no better than a
-      revision with no rows at all (+0.0001). The edits did score about 0.006 above plain gradient descent, but
+      revision with no rows at all (+0.0001). The edits did beat plain gradient descent on 6 of 6 tasks, by 0.006, but
       only because gradient descent slightly damaged a network that was already good while the edits left it
       alone.</p>
       <p>The honest caveat is that there was no headroom. The first draft already matched 3,500 rows, so a few dozen
       could not add much. A fair test needs tasks where its starting knowledge is weaker.</p>
-      <p>We show one round here, since a second changed nothing further. The MIT model could run its network up to 50
-      times and keep only the changes that helped, and their stronger results came with that feedback. We would like to
+      <p>We show one round here, since a second changed nothing further. In the MIT work, the model could run its network up
+      to 50 times and keep a change only if it helped, and its results improved with more runs. We would like to
       test many more rounds like that, on tasks with headroom, but that needs more API credits than this study
       had.</p>
     </div>
@@ -432,9 +653,10 @@
 </section>
 
 <footer>
-  <p>Everything was pre-registered, with a log of every change. The whole study used about $20 of API calls. A paper
+  <p>Every test was pre-registered, and every change from the plan is logged. The runs on the 2025 data used about $13
+  of API calls. A paper
   with code and data is on the way. Related work includes <a href="https://arxiv.org/abs/2411.17284">AutoElicit</a>,
-  <a href="https://arxiv.org/abs/2609.39639">MARS</a>, <a href="https://arxiv.org/abs/2605.24417">LLMTabBench</a> and
+  <a href="https://arxiv.org/abs/2609.39639">MARS</a>, <a href="https://arxiv.org/abs/2605.24417">LLMTabBench (now TabLens)</a> and
   <a href="https://rikiyat.github.io/blog/weight-space-programming/">weight-space programming</a>.</p>
 </footer>
 
