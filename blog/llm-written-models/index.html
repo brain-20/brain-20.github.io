@@ -157,14 +157,15 @@
   <p class="byline">Salmaan Barday, November 2026</p>
   <div class="intro">
     <div class="tldr">
-      <p>Each task here is a yes or no question about a person, such as whether a doctor has ever told them they have
-      high blood pressure. The data comes from health surveys, where each row is one respondent, with their age, sex,
-      income, smoking, other conditions and so on. A labelled row also has the answer. A model normally needs labelled
-      rows to learn from before it can predict anything.</p>
-      <p>Claude Opus 5.5 got none. It only saw the column descriptions, and set every weight of a small neural network
-      itself. That network does as well as logistic regression trained on 3,500 labelled rows. Logistic regression and
-      XGBoost never catch up, even with all the data. TabPFN, a model built for small tables, does after about 1,000.
-      The surveys are from 2025 and came out after Opus 5.5's training cutoff, so it can't have seen them.</p>
+      <p>A model normally has to learn from labelled examples before it can predict anything. I gave Claude Opus 5.5
+      none. From the column descriptions alone, it set every weight of a small neural network to predict things like
+      whether someone has high blood pressure. Those networks do as well as logistic regression trained on 3,500
+      labelled rows.</p>
+      <p>The data is from 2025 US health surveys, released after Opus 5.5's training cutoff, so it can't have seen
+      them. Each row is one person, with their age, sex, income, smoking, other conditions and so on, and a labelled
+      row also has the answer. Across six yes or no questions like that one, logistic regression and XGBoost never
+      catch up, even with all the data. TabPFN, a model built for small tables, catches up after about 1,000 labelled
+      rows.</p>
     </div>
   </div>
 </header>
